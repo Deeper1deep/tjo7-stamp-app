@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""Copy the launcher icons into the generated Android project and set the icon background colour.
-Run from the project root after `npx cap add android`."""
-import glob, os, re, shutil, sys
+"""Copy launcher icons and native Java plugin sources into the generated Android project."""
+import glob, os, shutil, sys
 
 RES = "android/app/src/main/res"
 SRC = "resources/android"
@@ -21,4 +20,8 @@ bg = os.path.join(RES, "values", "ic_launcher_background.xml")
 os.makedirs(os.path.dirname(bg), exist_ok=True)
 with open(bg, "w", encoding="utf-8") as fh:
     fh.write('<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#2A47E8</color>\n</resources>\n')
-print("icons applied")
+JAVA_DST = "android/app/src/main/java/com/tjo7/stamp"
+os.makedirs(JAVA_DST, exist_ok=True)
+for f in glob.glob("resources/android/java/*.java"):
+    shutil.copy(f, JAVA_DST)
+print("icons and native plugin applied")

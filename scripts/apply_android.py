@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Copy launcher icons and native Java plugin sources into the generated Android project."""
-import glob, os, shutil, sys
+"""Copy the launcher icons into the generated Android project and set the icon background colour.
+Run from the project root after `npx cap add android`."""
+import glob, os, re, shutil, sys
 
 RES = "android/app/src/main/res"
 SRC = "resources/android"

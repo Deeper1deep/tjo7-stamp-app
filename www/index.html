@@ -1,0 +1,1537 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#2a47e8"><title>ختم t.jo7</title><style>@font-face{font-family:Poppins;font-weight:400;src:url(fonts/Poppins-Regular.ttf) format("truetype")}@font-face{font-family:Poppins;font-weight:700;src:url(fonts/Poppins-Bold.ttf) format("truetype")}body{margin:0}</style></head><body>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Lalezar&family=Poppins:wght@400;700&display=swap">
+<style>
+/* Layout: preview stage + timeline + filmstrip on one side, setting cards on the other, one docked action bar at the bottom. Stacks to one column on phones. */
+:root {
+  --bg: #e7eaf0;
+  --panel: #f6f7fa;
+  --panel2: #e9ecf3;
+  --fg: #10131a;
+  --muted: #566074;
+  --line: #ccd2de;
+  --accent: #2a47e8;
+  --accent-fg: #ffffff;
+  --accent-soft: #d9e0ff;
+  --ok: #0f7a57;
+  --warn: #9a5b00;
+  --stage: #0a0c11;
+  --stage-fg: #e9ebf1;
+  --shadow: 0 10px 30px rgba(16, 19, 26, .16);
+  --font-ui: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --font-display: "Lalezar", "IBM Plex Sans Arabic", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c0e13; --panel: #141720; --panel2: #1c202b; --fg: #eef0f6; --muted: #98a2b8; --line: #272c39;
+    --accent: #8ea3ff; --accent-fg: #0a0f33; --accent-soft: #1d264f; --ok: #4fcaa1; --warn: #efb45c;
+    --stage: #05060a; --stage-fg: #e9ebf1; --shadow: 0 10px 30px rgba(0, 0, 0, .5); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c0e13; --panel: #141720; --panel2: #1c202b; --fg: #eef0f6; --muted: #98a2b8; --line: #272c39;
+  --accent: #8ea3ff; --accent-fg: #0a0f33; --accent-soft: #1d264f; --ok: #4fcaa1; --warn: #efb45c;
+  --stage: #05060a; --stage-fg: #e9ebf1; --shadow: 0 10px 30px rgba(0, 0, 0, .5); color-scheme: dark;
+}
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 0;
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+
+.shell { max-width: 1180px; margin: 0 auto; }
+
+/* ---- header ---- */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; margin-bottom: 18px; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.mark { flex: none; width: 44px; height: 44px; color: var(--accent); }
+.brand h1 { margin: 0; font: 400 30px/1.1 var(--font-display); text-wrap: balance; }
+.brand p { margin: 2px 0 0; color: var(--muted); font-size: .9rem; }
+.local { font-size: .8rem; color: var(--muted); border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 4px 12px; display: inline-flex; gap: 8px; align-items: center; }
+.local i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); display: inline-block; }
+
+/* ---- grid ---- */
+.grid { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 980px) {
+  .grid { grid-template-columns: minmax(0, 1.4fr) minmax(330px, 1fr); }
+  .col-stage { position: sticky; top: 14px; }
+}
+.col-set { display: grid; gap: 12px; min-width: 0; }
+
+/* ---- stage ---- */
+.stage {
+  position: relative; background: var(--stage); border-radius: 18px; padding: 16px; min-height: 280px;
+  display: grid; place-items: center; overflow: hidden; border: 2px solid transparent; transition: border-color .15s;
+}
+.stage.drag { border-color: var(--accent); }
+.stage canvas { display: block; max-width: 100%; max-height: min(62vh, 600px); width: auto; height: auto; border-radius: 6px; }
+.stage canvas.checker { background: conic-gradient(#8886 25%, #fff2 0 50%, #8886 0 75%, #fff2 0) 0 0 / 22px 22px; }
+.meta {
+  position: absolute; inset-block-start: 12px; inset-inline-start: 12px; font-size: 12px; background: rgba(0, 0, 0, .6); color: #fff;
+  padding: 3px 9px; border-radius: 6px; backdrop-filter: blur(4px);
+}
+.empty {
+  position: absolute; inset: 12px; border: 2px dashed rgba(255, 255, 255, .3); border-radius: 12px;
+  background: color-mix(in srgb, var(--stage) 68%, transparent); backdrop-filter: blur(3px);
+  display: grid; place-content: center; justify-items: center; gap: 6px; text-align: center; color: var(--stage-fg); padding: 16px;
+}
+.empty svg { width: 46px; height: 46px; opacity: .9; }
+.empty strong { font-size: 1.15rem; font-weight: 600; }
+.empty span { font-size: .85rem; opacity: .75; max-width: 34ch; }
+.empty .pick { margin-top: 6px; background: var(--accent); color: var(--accent-fg); border-radius: 10px; padding: 8px 18px; font-weight: 600; }
+.stage input[type="file"], .addtile input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 0; }
+.sampletag { position: absolute; inset-block-end: 12px; inset-inline-end: 12px; font-size: 12px; background: rgba(0, 0, 0, .6); color: #fff; padding: 3px 9px; border-radius: 6px; }
+
+/* ---- transport ---- */
+.transport {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 14px; align-items: center;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; margin-top: 10px;
+}
+.clock { font-size: 18px; font-weight: 500; min-width: 4.4ch; }
+.track { position: relative; height: 34px; direction: ltr; background: var(--panel2); border-radius: 8px; overflow: hidden; }
+.track .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); }
+.track .ticks { position: absolute; inset: 0; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 8px 3px; font-size: 10px; color: var(--muted); pointer-events: none; }
+.track .head { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--fg); left: 0; will-change: left; }
+.tnote { grid-column: 1 / -1; font-size: .82rem; color: var(--muted); }
+
+/* ---- filmstrip ---- */
+.film { display: flex; gap: 8px; overflow-x: auto; padding: 12px 2px 6px; margin-top: 2px; scrollbar-width: thin; }
+.fc { position: relative; flex: none; width: 178px; display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 8px; align-items: center; background: var(--panel); border: 1.5px solid var(--line); border-radius: 12px; padding: 6px; cursor: pointer; text-align: start; }
+.fc.ov::after { content: ''; position: absolute; top: 5px; inset-inline-end: 5px; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--panel); }
+.fc.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.fc img, .fc .ph { width: 46px; height: 46px; border-radius: 8px; object-fit: cover; background: var(--panel2); }
+.fc .nm { font-size: 12px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; text-align: start; }
+.fc .sz { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fc .x { position: absolute; inset-block-start: -7px; inset-inline-end: -7px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font-size: 11px; line-height: 1; display: grid; place-items: center; cursor: pointer; padding: 0; }
+.fc .x:hover { color: var(--fg); }
+.addtile { position: relative; flex: none; width: 74px; min-height: 58px; display: grid; place-items: center; border: 1.5px dashed var(--line); border-radius: 12px; color: var(--muted); font-size: 12px; text-align: center; background: transparent; cursor: pointer; }
+
+/* ---- cards ---- */
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.card h2 { margin: 0; font-size: .8rem; font-weight: 600; color: var(--muted); letter-spacing: .03em; }
+.hint { margin: 0; font-size: .8rem; color: var(--muted); }
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mode { display: grid; gap: 6px; text-align: start; border: 1.5px solid var(--line); background: var(--panel2); border-radius: 12px; padding: 10px; cursor: pointer; min-width: 0; }
+.mode svg { width: 100%; height: auto; display: block; color: var(--muted); }
+.mode b { font-weight: 600; font-size: .92rem; }
+.mode small { color: var(--muted); font-size: .76rem; line-height: 1.35; }
+.mode[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.mode[aria-pressed="true"] svg { color: var(--accent); }
+.seg { display: flex; flex-wrap: wrap; gap: 2px; background: var(--panel2); border-radius: 11px; padding: 3px; }
+.seg button { flex: 1 1 auto; min-width: 0; border: 0; background: transparent; color: var(--muted); border-radius: 8px; padding: 7px 10px; font-size: .88rem; cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--panel); color: var(--fg); font-weight: 600; box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgba(0, 0, 0, .12); }
+.seg .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--muted); margin-inline-end: 6px; vertical-align: -1px; }
+input[type="text"] { width: 100%; min-width: 0; font: 700 18px/1.2 "Poppins", system-ui, sans-serif; direction: ltr; text-align: left; color: var(--fg); background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.row2 { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; }
+.sub { font-size: .8rem; color: var(--muted); margin-bottom: 6px; display: block; }
+.corners { direction: ltr; position: relative; width: 112px; height: 76px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--panel2); }
+.corners button { position: absolute; width: 50%; height: 50%; border: 0; background: transparent; padding: 0; cursor: pointer; }
+.corners button::after { content: ""; position: absolute; width: 22px; height: 7px; border-radius: 3px; background: var(--muted); opacity: .55; }
+.corners [data-c="tl"] { top: 0; left: 0; } .corners [data-c="tl"]::after { top: 7px; left: 7px; }
+.corners [data-c="tr"] { top: 0; right: 0; } .corners [data-c="tr"]::after { top: 7px; right: 7px; }
+.corners [data-c="bl"] { bottom: 0; left: 0; } .corners [data-c="bl"]::after { bottom: 7px; left: 7px; }
+.corners [data-c="br"] { bottom: 0; right: 0; } .corners [data-c="br"]::after { bottom: 7px; right: 7px; }
+.corners button[aria-pressed="true"]::after { background: var(--accent); opacity: 1; }
+.sl { display: grid; gap: 4px; }
+.sl label { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: .88rem; }
+.sl output { font-size: 12px; color: var(--muted); background: var(--panel2); border-radius: 6px; padding: 1px 7px; }
+input[type="range"] { -webkit-appearance: none; appearance: none; direction: ltr; width: 100%; height: 22px; background: transparent; margin: 0; cursor: pointer; --p: 50%; }
+input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 4px; background: linear-gradient(to right, var(--accent) var(--p), var(--line) var(--p)); }
+input[type="range"]::-moz-range-track { height: 6px; border-radius: 4px; background: var(--line); }
+input[type="range"]::-moz-range-progress { height: 6px; border-radius: 4px; background: var(--accent); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--panel); border: 3px solid var(--accent); margin-top: -6px; }
+input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--panel); border: 3px solid var(--accent); }
+.tonly .not-t { display: none; }
+.stk-on .out-only { display: none; }
+.chk { display: flex; align-items: center; gap: 10px; font-size: .9rem; cursor: pointer; }
+.chk input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+/* ---- dock ---- */
+.dock { position: sticky; bottom: 0; z-index: 5; margin-top: 16px; padding: 10px 0 max(12px, env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, var(--bg) 72%, transparent); }
+.dock-in { max-width: 1180px; margin: 0 auto; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 12px; box-shadow: var(--shadow); display: grid; gap: 10px; }
+.results { display: grid; gap: 6px; max-height: 34vh; overflow-y: auto; }
+.res { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; background: var(--panel2); border-radius: 12px; padding: 7px 10px; }
+.res .rn { flex: 1 1 150px; min-width: 0; font-size: .88rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; text-align: start; }
+.res .rs { flex: 0 1 auto; font-size: 12px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.res .tag { font-family: var(--font-ui); font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid currentColor; }
+.res .tag.ok { color: var(--ok); } .res .tag.warn { color: var(--warn); }
+.prog { height: 8px; background: var(--panel2); border-radius: 999px; overflow: hidden; }
+.prog i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 999px; transition: width .15s; }
+.statusline { margin: 0; font-size: .86rem; color: var(--muted); }
+.statusline:empty { display: none; }
+.dock-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.summary { flex: 1 1 200px; min-width: 0; font-size: .85rem; color: var(--muted); }
+.btn { border: 1px solid var(--line); background: var(--panel2); color: var(--fg); border-radius: 12px; padding: 10px 16px; font-weight: 600; cursor: pointer; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); padding-inline: 26px; }
+.btn.small { padding: 6px 12px; font-size: .85rem; border-radius: 9px; }
+.btn:disabled { opacity: .55; cursor: progress; }
+@media (max-width: 560px) {
+  .brand h1 { font-size: 26px; }
+  .dock-row .btn { flex: 1 1 100%; }
+  .row2 { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="shell" dir="rtl" lang="ar">
+  <header class="top">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M6 14a8 8 0 0 1 8-8h20a8 8 0 0 1 8 8v14a8 8 0 0 1-8 8h-6l-4 6-4-6h-6a8 8 0 0 1-8-8z" fill="none" stroke="currentColor" stroke-width="2.4"/>
+        <circle cx="24" cy="21" r="4.2" fill="none" stroke="currentColor" stroke-width="2.4"/>
+        <path d="M28.2 21v2.2a2.6 2.6 0 0 0 5.2 0V21a9.4 9.4 0 1 0-3.6 7.4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>ختم الحقوق</h1>
+        <p>حط اسمك على الصور والفيديوهات والجيفات والاستيكرات بجودتها الأصلية</p>
+      </div>
+    </div>
+    <span class="local"><i></i>كل حاجة بتتعمل على جهازك، مفيش رفع لأي سيرفر</span>
+  </header>
+
+  <div class="grid">
+    <section class="col-stage" aria-label="المعاينة">
+      <div class="stage" id="stage">
+        <canvas id="cv" width="960" height="960" role="img" aria-label="معاينة الملف مع الحقوق"></canvas>
+        <span class="meta num" id="meta" hidden></span>
+        <span class="sampletag" id="sampleTag">صورة تجريبية</span>
+        <div class="empty" id="empty">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M24 33V11M15 20l9-9 9 9"/><path d="M8 30v6a3 3 0 0 0 3 3h26a3 3 0 0 0 3-3v-6"/></svg>
+          <strong>اسحب ملفاتك هنا</strong>
+          <span>صور، فيديوهات، جيفات، أو استيكرات واتساب. تقدر تسحب أكتر من ملف مع بعض، أو تلصق بـ Ctrl+V.</span>
+          <span class="pick">أو اضغط للاختيار</span>
+        </div>
+        <input type="file" id="file" multiple accept="image/*,video/*,.webm,.mp4,.mov,.gif,.jpg,.jpeg,.png,.webp,.zip,.wastickers,.enc" aria-label="اختار صور أو فيديوهات من جهازك">
+      </div>
+
+      <div class="transport" id="transport">
+        <span class="clock num" id="clock">0:00.0</span>
+        <div class="track" id="track" aria-hidden="true">
+          <div class="band" id="band"></div>
+          <div class="ticks num"><span>0</span><span>1s</span><span>2s</span><span>3s</span></div>
+          <div class="head" id="head"></div>
+        </div>
+        <span class="tnote" id="tnote"></span>
+      </div>
+
+      <div class="film" id="film" aria-label="الملفات"></div>
+    </section>
+
+    <section class="col-set" aria-label="الإعدادات" id="settings">
+      <div class="card per">
+        <label class="chk"><input type="checkbox" id="perItem" disabled><span>إعدادات حقوق خاصة بالملف ده بس</span></label>
+        <p class="hint" id="perItemNote">ضيف ملف الأول.</p>
+        <button class="btn small" type="button" id="resetAllItems">رجّع كل الملفات للإعداد العام</button>
+      </div>
+      <div class="card">
+        <h2>شكل الحقوق</h2>
+        <div class="modes" role="group" aria-label="شكل الحقوق">
+          <button class="mode" data-p="credit" aria-pressed="true" type="button">
+            <svg viewBox="0 0 120 52" aria-hidden="true"><rect x="1" y="1" width="118" height="50" rx="7" fill="none" stroke="currentColor" opacity=".4" stroke-width="1.5"/><rect x="9" y="38" width="26" height="6" rx="3" fill="currentColor"/></svg>
+            <b>حقوق ثابتة</b><small>صغيرة وخفيفة وظاهرة طول الوقت</small>
+          </button>
+          <button class="mode" data-p="blink" aria-pressed="false" type="button">
+            <svg viewBox="0 0 120 52" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.5" opacity=".4"><rect x="1" y="1" width="36" height="50" rx="6"/><rect x="42" y="1" width="36" height="50" rx="6"/><rect x="83" y="1" width="36" height="50" rx="6"/></g><rect x="47" y="36" width="16" height="6" rx="3" fill="currentColor"/></svg>
+            <b>يظهر ويختفي</b><small>يظهر في الثانية التانية ويختفي في التالتة</small>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>النص</h2>
+        <input type="text" id="txt" value="@t.jo7" maxlength="40" autocomplete="off" spellcheck="false" aria-label="النص">
+        <div class="row2">
+          <div class="not-t">
+            <span class="sub">المكان</span>
+            <div class="corners" role="group" aria-label="مكان النص">
+              <button data-c="tl" aria-pressed="false" aria-label="فوق شمال" type="button"></button>
+              <button data-c="tr" aria-pressed="false" aria-label="فوق يمين" type="button"></button>
+              <button data-c="bl" aria-pressed="true" aria-label="تحت شمال" type="button"></button>
+              <button data-c="br" aria-pressed="false" aria-label="تحت يمين" type="button"></button>
+            </div>
+          </div>
+          <div>
+            <span class="sub">اللون</span>
+            <div class="seg" role="group" aria-label="لون النص" id="segCol">
+              <button data-col="#ffffff" aria-pressed="true" type="button"><span class="dot" style="background:#fff"></span>أبيض</button>
+              <button data-col="#000000" aria-pressed="false" type="button"><span class="dot" style="background:#000"></span>أسود</button>
+            </div>
+            <span class="sub" style="margin-top:10px">السمك</span>
+            <div class="seg" role="group" aria-label="سمك الخط" id="segW">
+              <button data-w="400" aria-pressed="true" type="button">عادي</button>
+              <button data-w="700" aria-pressed="false" type="button">عريض</button>
+            </div>
+          </div>
+        </div>
+        <div class="sl not-t"><label for="size">الحجم <output class="num" id="sizeOut">13%</output></label><input type="range" id="size" min="5" max="70" value="13"></div>
+        <div class="sl not-t"><label for="margin">البعد عن الحافة <output class="num" id="marginOut">2%</output></label><input type="range" id="margin" min="0" max="12" step="0.5" value="2"></div>
+        <div class="sl"><label for="opacity">الوضوح <output class="num" id="opacityOut">55%</output></label><input type="range" id="opacity" min="10" max="100" step="5" value="55"></div>
+        <div class="sl"><label for="shadow">الظل <output class="num" id="shadowOut">0%</output></label><input type="range" id="shadow" min="0" max="100" step="5" value="0"></div>
+        <label class="chk"><input type="checkbox" id="tr"><span>نص بس بخلفية شفافة (من غير صورة)</span></label>
+      </div>
+
+      <div class="card" id="stkCard">
+        <h2>استيكرات واتساب</h2>
+        <label class="chk"><input type="checkbox" id="stk"><span>وضع الاستيكرات</span></label>
+        <label class="chk"><input type="checkbox" id="stkCrop" checked><span>قص تلقائي على حدود الاستيكر (أبعاد جديدة)</span></label>
+        <p class="hint" id="stkHint">ارفع ملفات الاستيكرات (.webp) أو ملف الباك كله (.zip / .wastickers). كل استيكر بيتقص على حدود الرسمة الفعلية (من غير الفراغ الشفاف) وبيطلع بأبعاده الجديدة بصيغة WebP، ولو قفلت القص بيطلع 512×512. الحجم جوا حدود واتساب: الثابت لحد 100 KB والمتحرك لحد 500 KB وعشر ثواني، والجودة بتتظبط لوحدها.</p>
+      </div>
+
+      <div class="card out-only">
+        <h2>الإخراج</h2>
+        <div class="out-only">
+          <span class="sub">الصيغة</span>
+          <div class="seg" role="group" aria-label="الصيغة" id="segFmt">
+            <button data-f="auto" aria-pressed="true" type="button">زي الأصل</button>
+            <button data-f="gif" aria-pressed="false" type="button">GIF</button>
+            <button data-f="webm" aria-pressed="false" type="button">WebM</button>
+            <button data-f="mp4" aria-pressed="false" type="button" id="mp4Btn" hidden>MP4</button>
+            <button data-f="png" aria-pressed="false" type="button">PNG</button>
+            <button data-f="jpg" aria-pressed="false" type="button">JPG</button>
+          </div>
+          <p class="hint" id="fmtHint" style="margin-top:6px"></p>
+        </div>
+        <div class="out-only">
+          <span class="sub">الحجم</span>
+          <div class="seg" role="group" aria-label="الحجم" id="segSize">
+            <button data-s="orig" aria-pressed="true" type="button">الأصلي</button>
+            <button data-s="1080" aria-pressed="false" type="button">1080</button>
+            <button data-s="720" aria-pressed="false" type="button">720</button>
+            <button data-s="540" aria-pressed="false" type="button">540</button>
+          </div>
+        </div>
+        <label class="chk" id="audioRow" hidden><input type="checkbox" id="audio" checked><span>حافظ على صوت الفيديو</span></label>
+      </div>
+    </section>
+  </div>
+
+  <div class="dock">
+    <div class="dock-in">
+      <div class="results" id="results" hidden></div>
+      <div class="prog" id="prog" hidden><i id="progBar"></i></div>
+      <p class="statusline" id="status" role="status" aria-live="polite"></p>
+      <div class="dock-row">
+        <span class="summary" id="summary"></span>
+        <button class="btn" id="saveOne" type="button" hidden>الملف الظاهر بس</button>
+        <button class="btn primary" id="saveAll" type="button">نزّل</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const S = {
+    src: null, w: 0, h: 0, sample: true, kind: 'image', vid: null, anim: null, item: null, flat: false,
+    corner: 'bl', width: 13, margin: 2, text: '@t.jo7', shadow: 0, opacity: 55, color: '#ffffff',
+    weight: 400, mode: 'static', transparent: false, fmt: 'auto', sizeSel: 'orig', audio: true, fontOk: false, sticker: false, stickerTouched: false, crop: true,
+  };
+  const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const ACC_ADD = NATIVE ? '*/*' : 'image/*,video/*,.webm,.mp4,.mov,.gif';
+  if (NATIVE) $('file').accept = '*/*';
+  const cv = $('cv'), cx = cv.getContext('2d');
+  let dirty = true;
+  const items = [];
+  let cur = -1, nextId = 1;
+  const MP4_OK = typeof MediaRecorder !== 'undefined' && ['video/mp4;codecs=avc1', 'video/mp4'].some((t) => { try { return MediaRecorder.isTypeSupported(t); } catch (e) { return false; } });
+  const REC_OK = typeof MediaRecorder !== 'undefined';
+
+  const fmtBytes = (n) => (n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB' : (n / 1048576).toFixed(n < 1e7 ? 2 : 1) + ' MB');
+  const fmtTime = (t) => { t = Math.max(0, t); const m = Math.floor(t / 60), s = t - m * 60; return m + ':' + (s < 10 ? '0' : '') + s.toFixed(1); };
+  function say(t) { $('status').textContent = t; }
+
+  /* ---------- sample photo ---------- */
+  function makeSample() {
+    const c = document.createElement('canvas'); c.width = 1080; c.height = 1080;
+    const g = c.getContext('2d');
+    const sky = g.createLinearGradient(0, 0, 0, 1080);
+    sky.addColorStop(0, '#2c3e66'); sky.addColorStop(0.55, '#d98a6a'); sky.addColorStop(1, '#f2c48b');
+    g.fillStyle = sky; g.fillRect(0, 0, 1080, 1080);
+    g.fillStyle = '#f7e2b0'; g.beginPath(); g.arc(700, 560, 120, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#5a3d4f';
+    g.beginPath(); g.moveTo(0, 760); g.bezierCurveTo(250, 640, 450, 800, 700, 700); g.bezierCurveTo(850, 640, 980, 720, 1080, 690); g.lineTo(1080, 1080); g.lineTo(0, 1080); g.fill();
+    g.fillStyle = '#2b2236';
+    g.beginPath(); g.moveTo(0, 880); g.bezierCurveTo(300, 800, 560, 940, 1080, 840); g.lineTo(1080, 1080); g.lineTo(0, 1080); g.fill();
+    return c;
+  }
+  const sampleEl = makeSample();
+  function useSample() {
+    if (S.vid) { try { S.vid.pause(); } catch (e) {} }
+    S.src = sampleEl; S.w = 1080; S.h = 1080; S.sample = true; S.kind = 'image'; S.vid = null; S.anim = null; S.item = null;
+    syncControls(); updateChrome(); dirty = true;
+  }
+  const stkDims = () => {
+    if (S.crop && S.box) { const bw = Math.max(1, S.box.x1 - S.box.x0), bh = Math.max(1, S.box.y1 - S.box.y0), k = Math.min(1, 512 / Math.max(bw, bh)); return [Math.max(1, Math.round(bw * k)), Math.max(1, Math.round(bh * k))]; }
+    return [512, 512];
+  };
+  const srcDims = () => (S.transparent ? [1200, 360] : S.sticker ? stkDims() : [S.w, S.h]);
+  const showAt = (t) => (S.mode === 'static' ? true : (t >= 0.999 && t < 1.999));
+
+  /* ---------- drawing (shared by preview and export) ---------- */
+  function draw(ctx, w, h, show) {
+    ctx.clearRect(0, 0, w, h);
+    if (S.flat) { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); }
+    const t = S.text.trim();
+    const layer = document.createElement('canvas'); layer.width = w; layer.height = h;
+    const tx = layer.getContext('2d');
+    const family = S.fontOk ? 'Poppins, system-ui, sans-serif' : 'system-ui, sans-serif';
+    const frac = S.transparent ? 80 : S.width;
+    tx.font = S.weight + ' 100px ' + family;
+    const base = tx.measureText(t || ' ').width || 1;
+    const fs = 100 * (w * frac / 100) / base;
+    tx.font = S.weight + ' ' + fs + 'px ' + family;
+    const m = tx.measureText(t || ' ');
+    const lw = S.weight >= 600 ? fs * 0.04 : 0;
+    const amt = S.shadow / 100;
+    const asc = m.actualBoundingBoxAscent, desc = m.actualBoundingBoxDescent;
+    const pad = w * S.margin / 100 + lw / 2 + fs * 0.2 * amt;
+    if (!S.transparent && (S.kind !== 'video' || S.src.readyState >= 2)) {
+      if (S.sticker && S.crop && S.box) {
+        const bx = S.box; ctx.drawImage(S.src, bx.x0, bx.y0, bx.x1 - bx.x0, bx.y1 - bx.y0, 0, 0, w, h);
+      } else if (S.sticker) {
+        const k0 = Math.min(w / S.w, h / S.h);
+        let k = k0, ox = (w - S.w * k0) / 2, oy = (h - S.h * k0) / 2;
+        const bx = S.box;
+        if (bx && t) {
+          const need = asc + desc + pad * 2, top = S.corner[0] === 't';
+          const free = top ? oy + bx.y0 * k0 : h - (oy + bx.y1 * k0);
+          if (free < need) {
+            const bh = bx.y1 - bx.y0;
+            k = Math.min(k0, (h - need) / bh);
+            const mid = (bx.y0 + bx.y1) / 2 * k;
+            const regionMid = top ? need + (h - need) / 2 : (h - need) / 2;
+            ox = (w - S.w * k) / 2; oy = regionMid - mid;
+          }
+        }
+        ctx.drawImage(S.src, ox, oy, S.w * k, S.h * k);
+      } else ctx.drawImage(S.src, 0, 0, w, h);
+    }
+    if (!show || !t) return;
+    let x, y;
+    if (S.transparent) { x = (w - m.width) / 2; y = (h + asc - desc) / 2; }
+    else {
+      x = S.corner[1] === 'l' ? pad : w - pad - m.width;
+      y = S.corner[0] === 't' ? pad + asc : h - pad - desc;
+    }
+    tx.textBaseline = 'alphabetic'; tx.textAlign = 'left';
+    tx.lineJoin = 'round'; tx.lineWidth = lw; tx.strokeStyle = S.color; tx.fillStyle = S.color;
+    if (amt > 0) {
+      const dark = S.color === '#ffffff';
+      tx.shadowColor = (dark ? 'rgba(0,0,0,' : 'rgba(255,255,255,') + Math.min(1, 0.3 + 0.7 * amt) + ')';
+      tx.shadowBlur = fs * (0.04 + 0.2 * amt); tx.shadowOffsetY = fs * 0.03;
+    }
+    if (lw > 0) tx.strokeText(t, x, y);
+    tx.fillText(t, x, y);
+    ctx.globalAlpha = S.opacity / 100;
+    ctx.drawImage(layer, 0, 0);
+    ctx.globalAlpha = 1;
+  }
+  function renderPreview(show) {
+    const [sw, sh] = srcDims();
+    const pw = Math.min(sw, 960), ph = Math.round(pw * sh / sw);
+    if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+    draw(cx, pw, ph, show);
+  }
+
+  /* ---------- timeline + preview loop ---------- */
+  const head = $('head'), band = $('band'), clock = $('clock'), tnote = $('tnote');
+  function renderTrack() {
+    if (S.mode === 'blink') {
+      band.style.left = '33.33%'; band.style.width = '33.33%';
+      tnote.textContent = 'الحقوق بتظهر من الثانية 1 للثانية 2، والملف بيتعمل مدته 3 ثواني.';
+    } else {
+      band.style.left = '0'; band.style.width = '100%';
+      tnote.textContent = S.kind === 'image' || S.transparent ? 'الحقوق ظاهرة طول الوقت.' : 'الحقوق ظاهرة طول مدة الملف.';
+    }
+  }
+  let lastShow = null;
+  const t0 = performance.now();
+  function tick(now) {
+    const wall = (now - t0) / 1000;
+    let t = wall % 3, frac = null;
+    const live = !S.transparent;
+    if (live && S.kind === 'anim' && S.anim) { S.anim.render(wall); }
+    if (live && S.kind === 'video' && S.vid) t = S.vid.currentTime || 0;
+    if (S.mode === 'blink') {
+      frac = clamp(t / 3, 0, 1);
+    } else if (live && S.kind === 'video' && S.vid && S.vid.duration) frac = t / S.vid.duration;
+    else if (live && S.kind === 'anim' && S.anim) frac = (wall % S.anim.total) / S.anim.total;
+    const show = showAt(t);
+    if (dirty || (live && (S.kind === 'video' || S.kind === 'anim')) || show !== lastShow) { renderPreview(show); lastShow = show; dirty = false; }
+    if (frac === null) { head.hidden = true; clock.textContent = '0:00.0'; }
+    else { head.hidden = false; head.style.left = 'calc(' + (frac * 100) + '% - ' + (frac * 2) + 'px)'; clock.textContent = fmtTime(S.mode === 'blink' ? t : frac * (S.kind === 'video' && S.vid ? S.vid.duration : S.anim ? S.anim.total : 3)); }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+  if (document.fonts && document.fonts.load) {
+    Promise.all([document.fonts.load('400 100px Poppins'), document.fonts.load('700 100px Poppins')])
+      .then(() => { S.fontOk = true; dirty = true; }).catch(() => {});
+  }
+
+  /* ---------- encoders ---------- */
+  const LZW_T = new Int32Array(4096 * 256);
+  function medianCut(px, n) {
+    const m = px.length / 3;
+    const boxes = [];
+    function mk(ids) {
+      let mn = [255, 255, 255], mx = [0, 0, 0];
+      for (const i of ids) for (let c = 0; c < 3; c++) { const v = px[i * 3 + c]; if (v < mn[c]) mn[c] = v; if (v > mx[c]) mx[c] = v; }
+      const r = [mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2]];
+      const ch = r[0] >= r[1] && r[0] >= r[2] ? 0 : r[1] >= r[2] ? 1 : 2;
+      return { ids, ch, rng: r[ch] };
+    }
+    boxes.push(mk(Array.from({ length: m }, (_, i) => i)));
+    while (boxes.length < n) {
+      let bi = -1, best = 0;
+      for (let i = 0; i < boxes.length; i++) {
+        const b = boxes[i];
+        if (b.ids.length > 1 && b.rng > 0) { const sc = b.rng * Math.sqrt(b.ids.length); if (sc > best) { best = sc; bi = i; } }
+      }
+      if (bi < 0) break;
+      const b = boxes[bi], ch = b.ch;
+      b.ids.sort((p, q) => px[p * 3 + ch] - px[q * 3 + ch]);
+      const mid = b.ids.length >> 1;
+      boxes.splice(bi, 1, mk(b.ids.slice(0, mid)), mk(b.ids.slice(mid)));
+    }
+    return boxes.map((b) => {
+      let r = 0, g = 0, bl = 0;
+      for (const i of b.ids) { r += px[i * 3]; g += px[i * 3 + 1]; bl += px[i * 3 + 2]; }
+      const k = b.ids.length;
+      return [Math.round(r / k), Math.round(g / k), Math.round(bl / k)];
+    });
+  }
+  function lzw(px) {
+    const CLEAR = 256, EOI = 257;
+    let size = 9, maxc = 511, free = 258;
+    const table = LZW_T; table.fill(-1);
+    const out = []; let cur = 0, bits = 0;
+    function emit(code, clr) {
+      cur |= code << bits; bits += size;
+      while (bits >= 8) { out.push(cur & 255); cur >>>= 8; bits -= 8; }
+      if (clr) { size = 9; maxc = 511; }
+      else if (free > maxc) { size++; maxc = size === 12 ? 4096 : (1 << size) - 1; }
+    }
+    emit(CLEAR, true);
+    let prefix = px[0];
+    for (let i = 1; i < px.length; i++) {
+      const k = px[i], key = prefix * 256 + k, hit = table[key];
+      if (hit >= 0) { prefix = hit; continue; }
+      emit(prefix, false);
+      if (free < 4096) table[key] = free++;
+      else { table.fill(-1); free = 258; emit(CLEAR, true); }
+      prefix = k;
+    }
+    emit(prefix, false); emit(EOI, false);
+    if (bits > 0) out.push(cur & 255);
+    return out;
+  }
+
+  function buildGif(w, h, palette, frames, overlay) {
+    const parts = [];
+    const hd = [];
+    'GIF89a'.split('').forEach((c) => hd.push(c.charCodeAt(0)));
+    hd.push(w & 255, w >> 8, h & 255, h >> 8, 0xF7, 0, 0);
+    for (let i = 0; i < 256; i++) { const c = palette[i] || [0, 0, 0]; hd.push(c[0], c[1], c[2]); }
+    hd.push(0x21, 0xFF, 0x0B); 'NETSCAPE2.0'.split('').forEach((c) => hd.push(c.charCodeAt(0)));
+    hd.push(3, 1, 0, 0, 0);
+    parts.push(Uint8Array.from(hd));
+    for (const f of frames) {
+      const cs = Math.max(2, Math.round(f.delay * 100));
+      const flags = overlay ? 0x09 : (f.tr ? 0x05 : 0x04);
+      const ti = overlay || f.tr ? 255 : 0;
+      const data = f.data, nb = Math.ceil(data.length / 255);
+      const fb = new Uint8Array(8 + 10 + 1 + data.length + nb + 1);
+      let o = 0;
+      fb.set([0x21, 0xF9, 4, flags, cs & 255, cs >> 8, ti, 0], o); o += 8;
+      fb.set([0x2C, f.x & 255, f.x >> 8, f.y & 255, f.y >> 8, f.w & 255, f.w >> 8, f.h & 255, f.h >> 8, 0], o); o += 10;
+      fb[o++] = 8;
+      for (let i = 0; i < data.length; i += 255) { const n = Math.min(255, data.length - i); fb[o++] = n; for (let j = 0; j < n; j++) fb[o++] = data[i + j]; }
+      fb[o++] = 0;
+      parts.push(fb);
+    }
+    parts.push(Uint8Array.of(0x3B));
+    return new Blob(parts, { type: 'image/gif' });
+  }
+  const tick0 = () => new Promise((r) => setTimeout(r, 0));
+  const seekTo = (v, t) => new Promise((res) => {
+    let done = false;
+    const fin = () => { if (!done) { done = true; v.removeEventListener('seeked', fin); res(); } };
+    v.addEventListener('seeked', fin); setTimeout(fin, 900); v.currentTime = t;
+  });
+  const P = { k: 0, n: 1 };
+  function prog(frac, label) {
+    const f = clamp((P.k + clamp(frac, 0, 1)) / P.n, 0, 1);
+    $('progBar').style.width = (f * 100).toFixed(1) + '%';
+    if (label) say((P.n > 1 ? 'ملف ' + (P.k + 1) + ' من ' + P.n + ': ' : '') + label);
+  }
+
+  /* ---------- sizes ---------- */
+  function outSize(motion) {
+    const [sw, sh] = srcDims();
+    let tw = S.sizeSel === 'orig' ? sw : Math.min(+S.sizeSel, sw);
+    let w = tw, h = tw * sh / sw;
+    if (motion && w * h > 8.3e6) { const k = Math.sqrt(8.3e6 / (w * h)); w *= k; h *= k; }
+    return [Math.max(2, Math.round(w)), Math.max(2, Math.round(h))];
+  }
+  const vidLen = () => (S.src && S.src.duration && isFinite(S.src.duration) ? S.src.duration : 3);
+  function clipLen(kind) {
+    if (S.mode === 'blink') return 3;
+    const cap = kind === 'gif' ? 15 : 120;
+    if (S.kind === 'video' && !S.transparent) return Math.min(vidLen(), cap);
+    if (S.kind === 'anim' && !S.transparent) return Math.min(S.anim.total, cap);
+    return 3;
+  }
+
+  /* ---------- GIF export ---------- */
+  async function exportGif() {
+    const [w, h] = outSize(true);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    const grab = (show) => { draw(g, w, h, show); return g.getImageData(0, 0, w, h).data; };
+    const overlay = S.transparent;
+    const isVid = S.kind === 'video' && !overlay, isAnim = S.kind === 'anim' && !overlay;
+    const animated = isVid || isAnim;
+    const n = w * h, dt = 0.04;
+    let sched;
+    if (!animated) sched = S.mode === 'static' ? [{ t: 0, show: true, delay: 1 }] : [{ t: 0, show: false, delay: 1 }, { t: 0, show: true, delay: 1 }, { t: 0, show: false, delay: 1 }];
+    else {
+      const N = Math.max(1, Math.round(clipLen('gif') / dt));
+      sched = Array.from({ length: N }, (_, i) => ({ t: i * dt, show: showAt(i * dt), delay: dt }));
+    }
+    const vdur = isVid ? (S.src.duration || 1) : 1;
+    if (isVid) S.src.pause();
+    const setT = async (t) => { if (isVid) await seekTo(S.src, t % vdur); else if (isAnim) S.anim.render(t); };
+    try {
+      /* pass 1: build one palette from a handful of frames */
+      const probes = animated ? Array.from({ length: Math.min(14, sched.length) }, (_, i) => sched[Math.floor(i * sched.length / Math.min(14, sched.length))]) : sched;
+      const samples = [], per = animated ? 3500 : 60000;
+      for (let i = 0; i < probes.length; i++) {
+        const p = probes[i]; await setT(p.t); const d = grab(p.show);
+        prog(0.05 * (i + 1) / probes.length, 'بجهز الألوان…');
+        if (overlay && !p.show) continue;
+        const step = Math.max(1, Math.floor(n / per));
+        for (let q = 0; q < n; q += step) if (d[q * 4 + 3] >= 128) samples.push(d[q * 4], d[q * 4 + 1], d[q * 4 + 2]);
+      }
+      if (!samples.length) samples.push(255, 255, 255);
+      const pal = medianCut(Uint8Array.from(samples), 255);
+      while (pal.length < 255) pal.push([0, 0, 0]);
+      pal.push([0, 0, 0]);
+      await tick0();
+      const cache = new Int16Array(1 << 18).fill(-1);
+      const mapIdx = (data) => {
+        const out = new Uint8Array(n);
+        for (let i = 0; i < n; i++) {
+          if (overlay && data[i * 4 + 3] < 128) { out[i] = 255; continue; }
+          const r = data[i * 4], gg = data[i * 4 + 1], b = data[i * 4 + 2];
+          const key = ((r >> 2) << 12) | ((gg >> 2) << 6) | (b >> 2);
+          let v = cache[key];
+          if (v < 0) {
+            let best = 1e9; v = 0;
+            for (let q = 0; q < 255; q++) {
+              const dr = r - pal[q][0], dg = gg - pal[q][1], db = b - pal[q][2];
+              const d = dr * dr * 3 + dg * dg * 4 + db * db * 2;
+              if (d < best) { best = d; v = q; }
+            }
+            cache[key] = v;
+          }
+          out[i] = v;
+        }
+        return out;
+      };
+      /* pass 2: encode frame by frame, keeping only what changed */
+      const frames = []; let disp = null;
+      const tol = 48;
+      for (let i = 0; i < sched.length; i++) {
+        const p = sched[i]; await setT(p.t);
+        const idx = mapIdx(grab(p.show));
+        if (overlay) { frames.push({ x: 0, y: 0, w, h, data: lzw(idx), delay: p.delay }); }
+        else if (!disp) { disp = idx; frames.push({ x: 0, y: 0, w, h, data: lzw(idx), delay: p.delay, tr: false }); }
+        else {
+          let x0 = w, y0 = h, x1 = -1, y1 = -1;
+          const chg = new Uint8Array(n);
+          for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+              const o = y * w + x, a = idx[o], b2 = disp[o];
+              if (a === b2) continue;
+              const pa = pal[a], pb = pal[b2];
+              const dr = pa[0] - pb[0], dg = pa[1] - pb[1], db = pa[2] - pb[2];
+              if (dr * dr + dg * dg + db * db <= tol) continue;
+              chg[o] = 1;
+              if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+            }
+          }
+          if (x1 < 0) { frames[frames.length - 1].delay += p.delay; }
+          else {
+            const rw = x1 - x0 + 1, rh = y1 - y0 + 1, sub = new Uint8Array(rw * rh);
+            for (let y = 0; y < rh; y++) for (let x = 0; x < rw; x++) {
+              const o = (y + y0) * w + x + x0;
+              if (chg[o]) { sub[y * rw + x] = idx[o]; disp[o] = idx[o]; } else sub[y * rw + x] = 255;
+            }
+            frames.push({ x: x0, y: y0, w: rw, h: rh, data: lzw(sub), delay: p.delay, tr: true });
+          }
+        }
+        prog(0.05 + 0.95 * (i + 1) / sched.length, 'بجهز الجيف… ' + Math.round(((i + 1) / sched.length) * 100) + '%');
+        if (i % 3 === 2) await tick0();
+      }
+      return buildGif(w, h, pal, frames, overlay);
+    } finally {
+      if (isVid) S.src.play().catch(() => {});
+    }
+  }
+
+  /* ---------- video export (WebM / MP4) ---------- */
+  function fixWebmDuration(buf, ms) {
+    try {
+      const u = new Uint8Array(buf);
+      const rv = (p, keep) => {
+        const b = u[p]; let len = 1, mask = 0x80;
+        while (len <= 8 && !(b & mask)) { len++; mask >>= 1; }
+        if (len > 8) return null;
+        let v = keep ? b : (b & (mask - 1)), ones = (b & (mask - 1)) === mask - 1;
+        for (let i = 1; i < len; i++) { v = v * 256 + u[p + i]; if (u[p + i] !== 255) ones = false; }
+        return { len, v, unknown: ones };
+      };
+      const enc = (v, len) => { const o = new Uint8Array(len); let x = v; for (let i = len - 1; i > 0; i--) { o[i] = x % 256; x = Math.floor(x / 256); } o[0] = (1 << (8 - len)) | x; return o; };
+      let p = 0;
+      let id = rv(p, true), sz = rv(p + id.len, false);
+      p += id.len + sz.len + sz.v;
+      id = rv(p, true);
+      if (id.v !== 0x18538067) return buf;
+      const segSz = rv(p + id.len, false), segPos = p + id.len;
+      let q = segPos + segSz.len;
+      while (q < u.length) {
+        const eid = rv(q, true), esz = rv(q + eid.len, false);
+        if (!eid || !esz || eid.v === 0x1F43B675) break;
+        if (eid.v === 0x1549A966) {
+          const s0 = q + eid.len + esz.len, s1 = s0 + esz.v;
+          let r = s0;
+          while (r < s1) {
+            const cid = rv(r, true), csz = rv(r + cid.len, false);
+            if (cid.v === 0x4489) { if (csz.v === 8) { new DataView(buf).setFloat64(r + cid.len + csz.len, ms, false); } return buf; }
+            r += cid.len + csz.len + csz.v;
+          }
+          const dur = new Uint8Array(11); dur.set([0x44, 0x89, 0x88]); new DataView(dur.buffer).setFloat64(3, ms, false);
+          const nv = esz.v + 11, L = nv < 127 ? 1 : nv < 16383 ? 2 : nv < 2097151 ? 3 : 4;
+          const hdr = new Uint8Array(4 + L); hdr.set([0x15, 0x49, 0xA9, 0x66]); hdr.set(enc(nv, L), 4);
+          const delta = hdr.length + esz.v + 11 - (eid.len + esz.len + esz.v);
+          const out = new Uint8Array(u.length + delta);
+          out.set(u.subarray(0, q), 0); out.set(hdr, q); out.set(u.subarray(s0, s1), q + hdr.length); out.set(dur, q + hdr.length + esz.v); out.set(u.subarray(s1), q + hdr.length + esz.v + 11);
+          if (!segSz.unknown) out.set(enc(segSz.v + delta, segSz.len), segPos);
+          return out.buffer;
+        }
+        if (esz.unknown) break;
+        q += eid.len + esz.len + esz.v;
+      }
+      return buf;
+    } catch (e) { return buf; }
+  }
+  function hasAudio(v) {
+    if (typeof v.mozHasAudio === 'boolean') return v.mozHasAudio;
+    if (v.audioTracks && typeof v.audioTracks.length === 'number') return v.audioTracks.length > 0;
+    if (typeof v.webkitAudioDecodedByteCount === 'number') return v.webkitAudioDecodedByteCount > 0;
+    return true;
+  }
+  function audioFor(it) {
+    if (it.aud) return it.aud;
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+    const ctx = new AC(); const src = ctx.createMediaElementSource(it.el); const dest = ctx.createMediaStreamDestination();
+    src.connect(dest);
+    return (it.aud = { ctx, dest });
+  }
+  function pickBitrate(w, h) {
+    const it = S.item, floor = Math.max(120e3, w * h * 25 * 0.02);
+    if (S.kind === 'video' && it && it.bps) {
+      const scale = Math.min(1, (w * h) / (it.w * it.h));
+      return clamp(it.bps * 1.3 * Math.pow(scale, 0.75), floor, 25e6);
+    }
+    return clamp(w * h * 25 * 0.03, 250e3, 8e6);
+  }
+  async function exportVideo(kind) {
+    if (!REC_OK) throw new Error('MediaRecorder');
+    let [w, h] = outSize(true); w &= ~1; h &= ~1;
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    const types = kind === 'mp4' ? ['video/mp4;codecs=avc1.640028', 'video/mp4;codecs=avc1', 'video/mp4'] : ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+    const mime = types.find((t) => MediaRecorder.isTypeSupported(t));
+    if (!mime) throw new Error(kind);
+    const vid = S.kind === 'video' && !S.transparent ? S.src : null;
+    const len = clipLen('video');
+    const vstream = c.captureStream(30);
+    let atracks = [], unmute = false;
+    if (vid && S.audio && hasAudio(vid)) {
+      try { const A = audioFor(S.item); if (A) { await A.ctx.resume(); vid.muted = false; unmute = true; atracks = A.dest.stream.getAudioTracks(); } } catch (e) { atracks = []; }
+    }
+    const rec = new MediaRecorder(new MediaStream([...vstream.getVideoTracks(), ...atracks]), { mimeType: mime, videoBitsPerSecond: pickBitrate(w, h), audioBitsPerSecond: 96000 });
+    const chunks = [];
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    const done = new Promise((r) => { rec.onstop = r; });
+    if (vid) { try { vid.currentTime = 0; await vid.play(); } catch (e) {} }
+    const frame = (t) => { if (S.kind === 'anim' && S.anim && !S.transparent) S.anim.render(t); draw(g, w, h, showAt(t)); };
+    frame(0);
+    rec.start(250);
+    const start = performance.now();
+    await new Promise((res) => {
+      const step = (now) => {
+        const t = (now - start) / 1000;
+        if (t >= len) { res(); return; }
+        frame(t); prog(t / len, 'بسجّل… ' + Math.max(0, len - t).toFixed(0) + ' ث (سيب الصفحة مفتوحة)');
+        requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
+    frame(len);
+    await new Promise((r) => setTimeout(r, 150));
+    const elapsed = performance.now() - start;
+    rec.stop(); await done;
+    if (unmute) vid.muted = true;
+    let buf = await new Blob(chunks).arrayBuffer();
+    if (kind === 'webm') buf = fixWebmDuration(buf, elapsed - 150);
+    return new Blob([buf], { type: mime.split(';')[0] });
+  }
+
+  /* ---------- WebP: stickers + animated WebP ---------- */
+  const WA = { staticMax: 100 * 1024, animMax: 500 * 1024, maxSec: 10, minDelay: 0.02 };
+  function webpChunks(buf) {
+    const u = new Uint8Array(buf);
+    if (String.fromCharCode(u[0], u[1], u[2], u[3]) !== 'RIFF') throw new Error('webp');
+    const out = []; let p = 12;
+    while (p + 8 <= u.length) {
+      const id = String.fromCharCode(u[p], u[p + 1], u[p + 2], u[p + 3]);
+      const sz = (u[p + 4] | (u[p + 5] << 8) | (u[p + 6] << 16) | (u[p + 7] << 24)) >>> 0, total = 8 + sz + (sz & 1);
+      if (id === 'ALPH' || id === 'VP8 ' || id === 'VP8L') out.push(u.subarray(p, Math.min(u.length, p + total)));
+      p += total;
+    }
+    if (!out.length) throw new Error('webp');
+    return out;
+  }
+  function buildAnimWebp(w, h, frames) {
+    const u32 = (v) => [v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >>> 24) & 255];
+    const u24 = (v) => [v & 255, (v >> 8) & 255, (v >> 16) & 255];
+    const ck = (id, body) => { const hd = Uint8Array.from([...id].map((c) => c.charCodeAt(0)).concat(u32(body.length))); return body.length & 1 ? [hd, body, Uint8Array.of(0)] : [hd, body]; };
+    const parts = [];
+    parts.push(...ck('VP8X', Uint8Array.from([0x12, 0, 0, 0, ...u24(w - 1), ...u24(h - 1)])));
+    parts.push(...ck('ANIM', Uint8Array.from([0, 0, 0, 0, 0, 0])));
+    for (const f of frames) {
+      const dur = Math.min(0xFFFFFF, Math.max(8, Math.round(f.delay * 1000)));
+      const head = Uint8Array.from([0, 0, 0, 0, 0, 0, ...u24(w - 1), ...u24(h - 1), ...u24(dur), 0x02]);
+      let len = head.length; f.chunks.forEach((c) => { len += c.length; });
+      const body = new Uint8Array(len); body.set(head, 0); let o = head.length; f.chunks.forEach((c) => { body.set(c, o); o += c.length; });
+      parts.push(...ck('ANMF', body));
+    }
+    let size = 4; parts.forEach((p) => { size += p.length; });
+    return new Blob([Uint8Array.from([0x52, 0x49, 0x46, 0x46, ...u32(size), 0x57, 0x45, 0x42, 0x50]), ...parts], { type: 'image/webp' });
+  }
+  async function exportWebp() {
+    const lim = S.sticker && !S.transparent;
+    const [w, h] = lim ? stkDims() : outSize(true);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    const isVid = S.kind === 'video' && !S.transparent, isAnim = S.kind === 'anim' && !S.transparent;
+    const animated = isVid || isAnim || S.mode === 'blink';
+    const toWebp = (q) => new Promise((res, rej) => c.toBlob((b) => { if (!b) rej(new Error('webp')); else if (b.type !== 'image/webp') rej(new Error('المتصفح ده مش بيدعم تصدير WebP، استخدم Chrome')); else res(b); }, 'image/webp', q));
+    if (!animated) {
+      draw(g, w, h, true);
+      const qs = lim ? [0.92, 0.85, 0.75, 0.65, 0.55, 0.45, 0.35, 0.25, 0.15] : [0.9];
+      let blob = null;
+      for (let i = 0; i < qs.length; i++) { blob = await toWebp(qs[i]); prog((i + 1) / qs.length, lim ? 'بظبط الحجم…' : 'بجهز…'); if (!lim || blob.size <= WA.staticMax) break; }
+      return blob;
+    }
+    let sched;
+    if (isAnim) {
+      const a = S.anim; sched = []; let acc = 0;
+      for (let i = 0; i < a.count; i++) {
+        const d = Math.max(WA.minDelay, a.frames[i].delay);
+        if (lim && acc + d > WA.maxSec + 0.001) break;
+        sched.push({ i, show: showAt(a.starts[i] + 1e-4), delay: d }); acc += d;
+      }
+    } else if (isVid) {
+      const dt = 1 / 15, len = Math.min(vidLen(), lim ? WA.maxSec : 30), N = Math.max(1, Math.round(len / dt));
+      sched = Array.from({ length: N }, (_, i) => ({ t: i * dt, show: showAt(i * dt), delay: dt }));
+    } else sched = [{ show: false, delay: 1 }, { show: true, delay: 1 }, { show: false, delay: 1 }];
+    const vdur = isVid ? (S.src.duration || 1) : 1;
+    if (isVid) S.src.pause();
+    const imgs = [];
+    try {
+      for (let i = 0; i < sched.length; i++) {
+        const p = sched[i];
+        if (isVid) await seekTo(S.src, p.t % vdur); else if (isAnim) S.anim.renderIdx(p.i);
+        draw(g, w, h, p.show); imgs.push(g.getImageData(0, 0, w, h));
+        prog(0.25 * (i + 1) / sched.length, 'بجهز اللقطات…');
+        if (i % 4 === 3) await tick0();
+      }
+    } finally { if (isVid) S.src.play().catch(() => {}); }
+    let work = sched.map((p, i) => ({ img: imgs[i], delay: p.delay }));
+    const qList = lim ? [0.8, 0.65, 0.5, 0.38, 0.28] : [0.85];
+    let result = null;
+    for (let round = 0; round < 4; round++) {
+      for (let qi = 0; qi < qList.length; qi++) {
+        const enc = []; let total = 0, over = false;
+        for (let i = 0; i < work.length; i++) {
+          g.putImageData(work[i].img, 0, 0);
+          const chunks = webpChunks(await (await toWebp(qList[qi])).arrayBuffer());
+          enc.push({ chunks, delay: work[i].delay });
+          total += chunks.reduce((s2, x) => s2 + x.length, 0) + 32;
+          if (lim && total > WA.animMax * 1.5 && !(round === 3 && qi === qList.length - 1)) { over = true; break; }
+          if (i % 6 === 5) { prog(0.25 + 0.75 * ((round * qList.length + qi + (i + 1) / work.length) / (4 * qList.length)), 'بظبط الحجم… ' + work.length + ' لقطة'); await tick0(); }
+        }
+        if (over) continue;
+        result = buildAnimWebp(w, h, enc); result.__anim = true;
+        if (!lim || result.size <= WA.animMax) return result;
+      }
+      if (work.length <= 2) break;
+      const next = [];
+      for (let i = 0; i < work.length; i += 2) next.push({ img: work[i].img, delay: work[i].delay + (work[i + 1] ? work[i + 1].delay : 0) });
+      work = next;
+    }
+    return result;
+  }
+
+  /* ---------- still export (PNG / JPG / WebP) ---------- */
+  async function exportStill(fmt) {
+    const [w, h] = outSize(false);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    draw(c.getContext('2d'), w, h, true);
+    const mime = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' }[fmt];
+    return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error(fmt))), mime, 0.9));
+  }
+
+  /* ---------- zip (store only) ---------- */
+  const crcT = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = crcT[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  async function makeZip(files) {
+    const now = new Date(), dTime = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1), dDate = ((Math.max(1980, now.getFullYear()) - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+    const enc = new TextEncoder(); const parts = [], central = []; let offset = 0, cdSize = 0;
+    for (const f of files) {
+      const data = new Uint8Array(await f.blob.arrayBuffer()); const nm = enc.encode(f.name); const crc = crc32(data);
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true);
+      lh.setUint16(10, dTime, true); lh.setUint16(12, dDate, true); lh.setUint32(14, crc, true); lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true);
+      lh.setUint16(26, nm.length, true);
+      parts.push(lh.buffer, nm, data);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+      ch.setUint16(12, dTime, true); ch.setUint16(14, dDate, true); ch.setUint32(16, crc, true); ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true);
+      ch.setUint16(28, nm.length, true); ch.setUint32(42, offset, true);
+      central.push(ch.buffer, nm); cdSize += 46 + nm.length;
+      offset += 30 + nm.length + data.length;
+    }
+    const e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true);
+    e.setUint32(12, cdSize, true); e.setUint32(16, offset, true);
+    return new Blob([...parts, ...central, e.buffer], { type: 'application/zip' });
+  }
+
+
+
+  /* ---------- file loading ---------- */
+  /* ---------- animated GIF decoder ---------- */
+  function lzwDecode(minCode, data, npix) {
+    const clear = 1 << minCode, eoi = clear + 1;
+    let size = minCode + 1, next = eoi + 1, mask = (1 << size) - 1;
+    const prefix = new Uint16Array(4096), suffix = new Uint8Array(4096), stack = new Uint8Array(4097);
+    for (let i = 0; i < clear; i++) suffix[i] = i;
+    const out = new Uint8Array(npix);
+    let bits = 0, cnt = 0, pos = 0, op = 0, old = -1, first = 0;
+    while (op < npix) {
+      while (cnt < size && pos < data.length) { bits |= data[pos++] << cnt; cnt += 8; }
+      if (cnt < size) break;
+      let code = bits & mask; bits >>>= size; cnt -= size;
+      if (code === clear) { size = minCode + 1; next = eoi + 1; mask = (1 << size) - 1; old = -1; continue; }
+      if (code === eoi) break;
+      if (old === -1) { out[op++] = suffix[code]; old = code; first = code; continue; }
+      const inCode = code; let sp = 0;
+      if (code >= next) { stack[sp++] = first; code = old; }
+      while (code >= clear) { stack[sp++] = suffix[code]; code = prefix[code]; }
+      first = suffix[code]; stack[sp++] = first;
+      if (next < 4096) { prefix[next] = old; suffix[next] = first; next++; if (next === (1 << size) && size < 12) { size++; mask = (1 << size) - 1; } }
+      old = inCode;
+      while (sp > 0 && op < npix) out[op++] = stack[--sp];
+    }
+    return out;
+  }
+  function parseGif(buf, budgetBytes) {
+    const u = new Uint8Array(buf);
+    const sig = String.fromCharCode(u[0], u[1], u[2], u[3], u[4], u[5]);
+    if (sig !== 'GIF87a' && sig !== 'GIF89a') throw new Error('not gif');
+    const W = u[6] | (u[7] << 8), H = u[8] | (u[9] << 8);
+    let p = 13, gct = null;
+    if (u[10] & 0x80) { const n = 3 << ((u[10] & 7) + 1); gct = u.subarray(p, p + n); p += n; }
+    const cur = new Uint8ClampedArray(W * H * 4);
+    const frames = []; let gce = null, truncated = false;
+    const maxFrames = Math.max(2, Math.floor(budgetBytes / (W * H * 4)));
+    const subBlocks = () => { const parts = []; let len = 0; while (p < u.length && u[p] !== 0) { const n = u[p++]; parts.push(u.subarray(p, p + n)); p += n; len += n; } p++; const o = new Uint8Array(len); let k = 0; for (const a of parts) { o.set(a, k); k += a.length; } return o; };
+    while (p < u.length) {
+      const b = u[p++];
+      if (b === 0x3B) break;
+      if (b === 0x21) {
+        const label = u[p++];
+        if (label === 0xF9) { gce = { disp: (u[p + 1] >> 2) & 7, trans: (u[p + 1] & 1) ? u[p + 4] : -1, delay: u[p + 2] | (u[p + 3] << 8) }; p += 6; }
+        else { while (p < u.length && u[p] !== 0) p += u[p] + 1; p++; }
+        continue;
+      }
+      if (b !== 0x2C) continue;
+      const x0 = u[p] | (u[p + 1] << 8), y0 = u[p + 2] | (u[p + 3] << 8), fw = u[p + 4] | (u[p + 5] << 8), fh = u[p + 6] | (u[p + 7] << 8), fl = u[p + 8];
+      p += 9;
+      let pal = gct;
+      if (fl & 0x80) { const n = 3 << ((fl & 7) + 1); pal = u.subarray(p, p + n); p += n; }
+      const minCode = u[p++];
+      const data = subBlocks();
+      if (frames.length >= maxFrames) { truncated = true; break; }
+      const idx = lzwDecode(minCode, data, fw * fh);
+      const g = gce || { disp: 0, trans: -1, delay: 10 }; gce = null;
+      const saved = g.disp === 3 ? cur.slice() : null;
+      const rows = new Int32Array(fh);
+      if (fl & 0x40) {
+        let r = 0;
+        for (const [st, step] of [[0, 8], [4, 8], [2, 4], [1, 2]]) for (let y = st; y < fh; y += step) rows[r++] = y;
+      } else for (let y = 0; y < fh; y++) rows[y] = y;
+      for (let r = 0; r < fh; r++) {
+        const y = rows[r] + y0; if (y >= H) continue;
+        for (let x = 0; x < fw; x++) {
+          const xx = x + x0; if (xx >= W) continue;
+          const ci = idx[r * fw + x];
+          if (ci === g.trans || !pal) continue;
+          const o = (y * W + xx) * 4;
+          cur[o] = pal[ci * 3]; cur[o + 1] = pal[ci * 3 + 1]; cur[o + 2] = pal[ci * 3 + 2]; cur[o + 3] = 255;
+        }
+      }
+      frames.push({ data: cur.slice(), delay: (g.delay <= 1 ? 10 : g.delay) / 100 });
+      if (g.disp === 2) {
+        for (let y = y0; y < Math.min(H, y0 + fh); y++) for (let x = x0; x < Math.min(W, x0 + fw); x++) { const o = (y * W + x) * 4; cur[o] = cur[o + 1] = cur[o + 2] = cur[o + 3] = 0; }
+      } else if (g.disp === 3 && saved) cur.set(saved);
+    }
+    return { w: W, h: H, frames, truncated };
+  }
+
+  function makeAnim(name, dec) {
+    const cvs = document.createElement('canvas'); cvs.width = dec.w; cvs.height = dec.h;
+    const cc = cvs.getContext('2d');
+    const starts = []; let total = 0;
+    dec.frames.forEach((f) => { starts.push(total); total += f.delay; });
+    let last = -1;
+    const imgData = cc.createImageData(dec.w, dec.h);
+    const renderIdx = (i) => { if (i === last) return; last = i; imgData.data.set(dec.frames[i].data); cc.putImageData(imgData, 0, 0); };
+    const it = {
+      name, kind: 'anim', el: cvs, w: dec.w, h: dec.h, total, truncated: dec.truncated, count: dec.frames.length, frames: dec.frames, starts, renderIdx,
+      render(t) {
+        t = ((t % total) + total) % total;
+        let i = starts.length - 1; while (i > 0 && starts[i] > t) i--;
+        renderIdx(i);
+      },
+    };
+    it.render(0);
+    return it;
+  }
+
+  /* ---------- files ---------- */
+
+  const isVideoFile = (f) => (f.type && f.type.startsWith('video/')) || /\.(webm|mp4|mov|m4v)$/i.test(f.name || '');
+  const readDataURL = (f) => new Promise((res) => {
+    const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = () => res(null); fr.readAsDataURL(f);
+  });
+  const mkVideo = (src) => new Promise((res) => {
+    const v = document.createElement('video');
+    v.muted = true; v.loop = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'auto';
+    v.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none';
+    document.body.appendChild(v);
+    let settled = false;
+    const fail = () => { if (settled) return; settled = true; v.remove(); res(null); };
+    v.onloadedmetadata = () => { if (settled) return; settled = true; res(v); };
+    v.onerror = fail;
+    setTimeout(() => { if (!settled && v.readyState < 1) fail(); }, 8000);
+    v.src = src;
+  });
+  const extOf = (n) => ((n || '').match(/\.([a-z0-9]+)$/i) || [, ''])[1].toLowerCase();
+  async function readZip(buf) {
+    const u = new Uint8Array(buf), dv = new DataView(buf);
+    let e = u.length - 22; while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+    if (e < 0) throw new Error('zip');
+    const n = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true);
+    const out = [], td = new TextDecoder();
+    for (let i = 0; i < n; i++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) break;
+      const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), lho = dv.getUint32(p + 42, true);
+      const name = td.decode(u.subarray(p + 46, p + 46 + nl)); p += 46 + nl + xl + cl;
+      if (name.endsWith('/')) continue;
+      const ds = lho + 30 + dv.getUint16(lho + 26, true) + dv.getUint16(lho + 28, true), raw = u.subarray(ds, ds + csize);
+      let bytes;
+      if (method === 0) bytes = raw.slice();
+      else if (method === 8 && typeof DecompressionStream !== 'undefined') bytes = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+      else continue;
+      out.push({ name, bytes });
+    }
+    return out;
+  }
+  function isAnimWebp(u) {
+    return u.length > 30 && String.fromCharCode(u[0], u[1], u[2], u[3]) === 'RIFF' && String.fromCharCode(u[12], u[13], u[14], u[15]) === 'VP8X' && (u[20] & 0x02) !== 0;
+  }
+  async function decodeWebpAnim(f, budget) {
+    if (typeof ImageDecoder === 'undefined') return null;
+    let dec = null;
+    try {
+      dec = new ImageDecoder({ data: await f.arrayBuffer(), type: 'image/webp' });
+      await dec.tracks.ready;
+      const tr = dec.tracks.selectedTrack, n = tr ? tr.frameCount : 1;
+      if (!n || n < 2) { dec.close(); return null; }
+      const first = (await dec.decode({ frameIndex: 0 })).image; const W = first.displayWidth, H = first.displayHeight; first.close();
+      const max = Math.max(2, Math.floor(budget / (W * H * 4)));
+      const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d', { willReadFrequently: true });
+      const frames = []; let truncated = false;
+      for (let i = 0; i < n; i++) {
+        if (frames.length >= max) { truncated = true; break; }
+        const { image } = await dec.decode({ frameIndex: i });
+        g.clearRect(0, 0, W, H); g.drawImage(image, 0, 0);
+        const d = (image.duration || 100000) / 1e6; image.close();
+        frames.push({ data: g.getImageData(0, 0, W, H).data, delay: d < 0.011 ? 0.1 : d });
+      }
+      dec.close();
+      return { w: W, h: H, frames, truncated };
+    } catch (e) { try { if (dec) dec.close(); } catch (e2) {} return null; }
+  }
+  function detectAlpha(it) {
+    try {
+      const c = document.createElement('canvas'); c.width = 48; c.height = 48; const g = c.getContext('2d', { willReadFrequently: true });
+      g.drawImage(it.el, 0, 0, 48, 48);
+      const d = g.getImageData(0, 0, 48, 48).data;
+      for (let i = 3; i < d.length; i += 4) if (d[i] < 250) return true;
+    } catch (e) { /* ignore */ }
+    return false;
+  }
+  async function loadItem(f) {
+    const base = { id: nextId++, name: f.name || 'file', size: f.size || 0, ext: extOf(f.name), pack: f.__pack || null, entry: f.__entry || null };
+    if (isVideoFile(f)) {
+      let v = null;
+      try { v = await mkVideo(URL.createObjectURL(f)); } catch (e) { v = null; }
+      if (!v) { const d = await readDataURL(f); if (d) v = await mkVideo(d); }
+      if (!v) return null;
+      const dur = isFinite(v.duration) ? v.duration : 0;
+      return Object.assign(base, { kind: 'video', el: v, w: v.videoWidth, h: v.videoHeight, dur, bps: dur ? (base.size * 8) / dur : 0 });
+    }
+    if (f.type && !f.type.startsWith('image/')) return null;
+    if ((f.type === 'image/gif') || base.ext === 'gif') {
+      try {
+        const dec = parseGif(await f.arrayBuffer(), 220e6);
+        if (dec.frames.length > 1) { const a = makeAnim(base.name, dec); return Object.assign(a, base, { kind: 'anim', dur: a.total }); }
+      } catch (e) { console.error('gif decode', e); }
+    }
+    if (f.type === 'image/webp' || base.ext === 'webp') {
+      const dec = await decodeWebpAnim(f, 220e6);
+      if (dec && dec.frames.length > 1) { const a = makeAnim(base.name, dec); const it = Object.assign(a, base, { kind: 'anim', dur: a.total }); it.alpha = true; return it; }
+      try { if (isAnimWebp(new Uint8Array(await f.arrayBuffer()))) base.noAnim = true; } catch (e) { /* ignore */ }
+    }
+    const d = await readDataURL(f);
+    if (!d) return null;
+    return new Promise((resolve) => {
+      const im = new Image();
+      im.onload = () => { const it = Object.assign(base, { kind: 'image', el: im, w: im.naturalWidth, h: im.naturalHeight, dur: 0 }); it.alpha = detectAlpha(it); resolve(it); };
+      im.onerror = () => resolve(null);
+      im.src = d;
+    });
+  }
+  async function makeThumb(it) {
+    try {
+      const c = document.createElement('canvas'); c.width = 92; c.height = 92; const g = c.getContext('2d');
+      if (it.kind === 'video') await seekTo(it.el, Math.min(0.1, (it.dur || 1) / 2));
+      const r = Math.max(92 / it.w, 92 / it.h), dw = it.w * r, dh = it.h * r;
+      g.drawImage(it.el, (92 - dw) / 2, (92 - dh) / 2, dw, dh);
+      it.thumb = c.toDataURL('image/jpeg', 0.7); renderFilm();
+    } catch (e) { /* thumbnail is optional */ }
+  }
+  function setSticker(on) {
+    S.sticker = on; $('stk').checked = on; S.box = on && S.item ? (S.item.box || (S.item.box = boxOf(S.item))) : null; $('settings').classList.toggle('stk-on', on); dirty = true;
+  }
+  async function addFiles(fileList) {
+    const raw = [...(fileList || [])];
+    if (!raw.length) return;
+    say('بفتح ' + raw.length + ' ملف…');
+    let bad = 0, trunc = 0, noAnim = 0;
+    const files = [];
+    for (const f of raw) {
+      if (/\.(zip|wastickers|enc)$/i.test(f.name || '') || /zip/.test(f.type || '')) {
+        try {
+          const ents = await readZip(await f.arrayBuffer());
+          const webps = ents.filter((e) => /\.webp$/i.test(e.name));
+          if (!webps.length) { bad++; continue; }
+          const pack = { name: baseName(f.name), others: ents.filter((e) => !/\.webp$/i.test(e.name)) };
+          webps.forEach((e) => { const file = new File([e.bytes], e.name.split('/').pop(), { type: 'image/webp' }); file.__pack = pack; file.__entry = e.name; files.push(file); });
+        } catch (e) { console.error(e); bad++; }
+      } else files.push(f);
+    }
+    const firstNew = items.length;
+    for (let k = 0; k < files.length; k++) {
+      const it = await loadItem(files[k]);
+      if (it) { items.push(it); if (it.truncated) trunc++; if (it.noAnim) noAnim++; makeThumb(it); } else bad++;
+      if (files.length > 6 && k % 5 === 4) say('بفتح ' + (k + 1) + ' من ' + files.length + '…');
+    }
+    if (items.length > firstNew) activate(firstNew);
+    let msg = '';
+    if (!S.stickerTouched) {
+      const all = items.length > 0 && items.every((x) => x.ext === 'webp');
+      if (all !== S.sticker) { setSticker(all); if (all) { msg += 'شغّلت وضع الاستيكرات لأن الملفات WebP. '; if (!S.presetTouched && S.mode === 'blink') applyPreset('credit'); } }
+    }
+    if (bad) msg += bad + ' ملف مقدرتش أفتحه. ';
+    if (trunc) msg += 'ملف متحرك طويل جدًا، اتاخد أول جزء منه بس. ';
+    if (noAnim) msg += noAnim + ' استيكر متحرك المتصفح ده مش بيقدر يفتحه متحرك، فهيتاخد أول لقطة بس. جرب Chrome.';
+    say(msg.trim());
+    updateChrome();
+  }
+  function boxOf(it) {
+    const full = { x0: 0, y0: 0, x1: it.w, y1: it.h };
+    try {
+      let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+      const scan = (d, W, H) => {
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (d[(y * W + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      };
+      if (it.kind === 'video') return full;
+      if (it.kind === 'anim') {
+        const n = it.frames.length, step = Math.max(1, Math.floor(n / 24));
+        for (let i = 0; i < n; i += step) scan(it.frames[i].data, it.w, it.h);
+        scan(it.frames[n - 1].data, it.w, it.h);
+      } else {
+        const k = Math.min(1, 256 / Math.max(it.w, it.h)), W = Math.max(1, Math.round(it.w * k)), H = Math.max(1, Math.round(it.h * k));
+        const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d', { willReadFrequently: true });
+        g.drawImage(it.el, 0, 0, W, H); scan(g.getImageData(0, 0, W, H).data, W, H);
+        x0 /= k; x1 = (x1 + 1) / k; y0 /= k; y1 = (y1 + 1) / k; x1 = Math.min(it.w, x1); y1 = Math.min(it.h, y1);
+        if (x1 < 0) return full;
+        return { x0, y0, x1, y1 };
+      }
+      if (x1 < 0) return full;
+      return { x0, y0, x1: x1 + 1, y1: y1 + 1 };
+    } catch (e) { return full; }
+  }
+  const KEYS = ['corner', 'width', 'margin', 'opacity', 'shadow', 'weight', 'color', 'mode'];
+  const pick = (o) => { const r = {}; KEYS.forEach((k) => { r[k] = o[k]; }); return r; };
+  let G = null;
+  function commit() { if (!G) G = pick(S); const tgt = S.item && S.item.ov ? S.item.ov : G; KEYS.forEach((k) => { tgt[k] = S[k]; }); }
+  function syncControls() {
+    setRange('size', 'sizeOut', S.width); setRange('margin', 'marginOut', S.margin); setRange('opacity', 'opacityOut', S.opacity); setRange('shadow', 'shadowOut', S.shadow);
+    setSeg('segCol', 'col', S.color); setSeg('segW', 'w', S.weight);
+    document.querySelectorAll('.corners button').forEach((o) => o.setAttribute('aria-pressed', String(o.dataset.c === S.corner)));
+    document.querySelectorAll('.mode').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.p === (S.mode === 'static' ? 'credit' : 'blink'))));
+    const pi = $('perItem'); pi.checked = !!(S.item && S.item.ov); pi.disabled = !S.item;
+    $('perItemNote').textContent = !S.item ? 'ضيف ملف الأول.' : S.item.ov ? 'التعديلات دي على الملف ده بس: ' + S.item.name : 'التعديلات بتتطبق على كل الملفات اللي ملهاش إعدادات خاصة.';
+    renderTrack();
+  }
+  function applyItem(it) {
+    if (S.vid && S.vid !== it.el) { try { S.vid.pause(); } catch (e) {} }
+    S.src = it.el; S.w = it.w; S.h = it.h; S.sample = false; S.kind = it.kind; S.item = it;
+    S.vid = it.kind === 'video' ? it.el : null;
+    S.anim = it.kind === 'anim' ? it : null;
+    S.box = S.sticker ? (it.box || (it.box = boxOf(it))) : null;
+    if (!G) G = pick(S);
+    Object.assign(S, pick(it.ov || G));
+    syncControls(); dirty = true;
+    updateChrome();
+  }
+  function activate(i) {
+    cur = i; applyItem(items[i]);
+    if (S.vid) { S.vid.currentTime = 0; S.vid.play().catch(() => {}); }
+    renderFilm(); dirty = true;
+  }
+  function removeItem(i) {
+    const it = items[i];
+    if (it.kind === 'video') { try { it.el.pause(); it.el.remove(); } catch (e) {} }
+    items.splice(i, 1);
+    if (!items.length) { cur = -1; useSample(); renderFilm(); return; }
+    activate(Math.min(i, items.length - 1));
+  }
+  function renderFilm() {
+    const box = $('film'); box.textContent = '';
+    items.forEach((it, i) => {
+      const card = document.createElement('div'); card.className = 'fc' + (i === cur ? ' on' : '') + (it.ov ? ' ov' : ''); card.setAttribute('role', 'button'); card.tabIndex = 0;
+      card.setAttribute('aria-label', it.name);
+      const th = it.thumb ? document.createElement('img') : document.createElement('span');
+      if (it.thumb) { th.src = it.thumb; th.alt = ''; } else th.className = 'ph';
+      const meta = document.createElement('div'); meta.style.minWidth = '0';
+      const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = it.name;
+      const sz = document.createElement('div'); sz.className = 'sz num'; sz.textContent = fmtBytes(it.size) + (it.kind === 'video' ? ' · فيديو' : it.kind === 'anim' ? ' · جيف' : '');
+      meta.append(nm, sz);
+      const x = document.createElement('button'); x.className = 'x'; x.type = 'button'; x.textContent = '✕'; x.setAttribute('aria-label', 'شيل ' + it.name);
+      x.addEventListener('click', (e) => { e.stopPropagation(); removeItem(i); });
+      card.addEventListener('click', () => activate(i));
+      card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(i); } });
+      card.append(th, meta, x); box.appendChild(card);
+    });
+    if (items.length) {
+      const add = document.createElement('label'); add.className = 'addtile'; add.textContent = '+ ضيف';
+      const inp = document.createElement('input'); inp.type = 'file'; inp.multiple = true; inp.accept = ACC_ADD; inp.setAttribute('aria-label', 'ضيف ملفات');
+      inp.addEventListener('change', (e) => { const fl = [...e.target.files]; e.target.value = ''; addFiles(fl); });
+      add.appendChild(inp); box.appendChild(add);
+    }
+    updateChrome();
+  }
+  $('file').addEventListener('change', (e) => { const fl = [...e.target.files]; e.target.value = ''; addFiles(fl); });
+
+  /* ---------- drag, drop, paste ---------- */
+  const stage = $('stage');
+  const hasFiles = (e) => e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
+  let dragDepth = 0;
+  const dragUi = (on) => stage.classList.toggle('drag', on);
+  document.addEventListener('dragenter', (e) => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth++; dragUi(true); });
+  document.addEventListener('dragover', (e) => { if (!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+  document.addEventListener('dragleave', (e) => { if (!hasFiles(e)) return; dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) dragUi(false); });
+  document.addEventListener('drop', (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault(); dragDepth = 0; dragUi(false);
+    addFiles([...e.dataTransfer.files]);
+  });
+  document.addEventListener('paste', (e) => {
+    const fl = [...(e.clipboardData ? e.clipboardData.items : [])].filter((i) => i.kind === 'file').map((i) => i.getAsFile()).filter(Boolean);
+    if (fl.length) addFiles(fl);
+  });
+
+  /* ---------- controls ---------- */
+  function paintRange(el) { const p = ((el.value - el.min) / (el.max - el.min)) * 100; el.style.setProperty('--p', p + '%'); }
+  function bindRange(id, outId, key) {
+    const el = $(id);
+    el.addEventListener('input', () => { S[key] = +el.value; $(outId).textContent = el.value + '%'; paintRange(el); dirty = true; });
+    paintRange(el);
+  }
+  function setRange(id, outId, val) { const el = $(id); el.value = val; $(outId).textContent = val + '%'; paintRange(el); }
+  function bindSeg(boxId, attr, cb) {
+    const box = $(boxId);
+    box.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+      box.querySelectorAll('button').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+      cb(b.dataset[attr]); dirty = true; updateChrome();
+    }));
+  }
+  function setSeg(boxId, attr, val) { $(boxId).querySelectorAll('button').forEach((o) => o.setAttribute('aria-pressed', String(o.dataset[attr] === String(val)))); }
+  bindRange('size', 'sizeOut', 'width'); bindRange('margin', 'marginOut', 'margin'); bindRange('opacity', 'opacityOut', 'opacity'); bindRange('shadow', 'shadowOut', 'shadow');
+  bindSeg('segCol', 'col', (v) => { S.color = v; });
+  bindSeg('segW', 'w', (v) => { S.weight = +v; });
+  bindSeg('segFmt', 'f', (v) => { S.fmt = v; });
+  bindSeg('segSize', 's', (v) => { S.sizeSel = v; });
+  $('settings').addEventListener('input', commit);
+  $('settings').addEventListener('click', commit);
+  $('perItem').addEventListener('change', (e) => {
+    const it = S.item; if (!it) return;
+    if (e.target.checked) it.ov = pick(S); else { it.ov = null; Object.assign(S, pick(G)); }
+    syncControls(); renderFilm(); dirty = true; updateChrome();
+  });
+  $('resetAllItems').addEventListener('click', () => { items.forEach((x) => { x.ov = null; }); if (S.item) { Object.assign(S, pick(G)); } syncControls(); renderFilm(); dirty = true; });
+  $('txt').addEventListener('input', (e) => { S.text = e.target.value; dirty = true; });
+  $('audio').addEventListener('change', (e) => { S.audio = e.target.checked; });
+  $('tr').addEventListener('change', (e) => {
+    S.transparent = e.target.checked; cv.classList.toggle('checker', S.transparent);
+    $('settings').classList.toggle('tonly', S.transparent); dirty = true; updateChrome();
+  });
+  $('stkCrop').addEventListener('change', (e) => { S.crop = e.target.checked; dirty = true; updateChrome(); });
+  $('stk').addEventListener('change', (e) => { S.stickerTouched = true; setSticker(e.target.checked); updateChrome(); });
+  document.querySelectorAll('.corners button').forEach((b) => b.addEventListener('click', () => {
+    S.corner = b.dataset.c;
+    document.querySelectorAll('.corners button').forEach((o) => o.setAttribute('aria-pressed', String(o === b))); dirty = true;
+  }));
+  function applyPreset(p) {
+    const P2 = p === 'credit' ? { mode: 'static', width: 13, margin: 2, opacity: 55, weight: 400 } : { mode: 'blink', width: 24, margin: 3, opacity: 100, weight: 700 };
+    Object.assign(S, P2);
+    setRange('size', 'sizeOut', P2.width); setRange('margin', 'marginOut', P2.margin); setRange('opacity', 'opacityOut', P2.opacity);
+    document.querySelectorAll('.mode').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.p === p)));
+    setSeg('segW', 'w', P2.weight); renderTrack(); commit(); dirty = true; updateChrome();
+  }
+  document.querySelectorAll('.mode').forEach((b) => b.addEventListener('click', () => { S.presetTouched = true; applyPreset(b.dataset.p); }));
+
+  /* ---------- output format logic ---------- */
+  function fmtFor(it) {
+    if (S.sticker && !S.transparent) return 'webp';
+    if (S.transparent) return ['gif', 'webm', 'png'].includes(S.fmt) ? S.fmt : 'gif';
+    if (S.fmt !== 'auto') return S.fmt === 'mp4' && !MP4_OK ? 'webm' : S.fmt;
+    if (it.kind === 'anim') return 'gif';
+    if (it.kind === 'video') return it.ext === 'mp4' || it.ext === 'mov' || it.ext === 'm4v' ? (MP4_OK ? 'mp4' : 'webm') : 'webm';
+    if (S.mode === 'blink') return 'gif';
+    if (it.ext === 'jpg' || it.ext === 'jpeg') return 'jpg';
+    if (it.ext === 'webp') return 'webp';
+    return 'png';
+  }
+  async function makeOne(fmt) {
+    S.flat = ['gif', 'webm', 'mp4', 'jpg'].includes(fmt) && !S.transparent;
+    try {
+      if (fmt === 'gif') return await exportGif();
+      if (fmt === 'webm' || fmt === 'mp4') return await exportVideo(fmt);
+      if (fmt === 'webp') return await exportWebp();
+      return await exportStill(fmt);
+    } finally { S.flat = false; }
+  }
+  const sizeLabel = () => (S.sizeSel === 'orig' ? 'الحجم الأصلي' : 'عرض ' + S.sizeSel);
+  const fmtLabel = () => (S.fmt === 'auto' ? 'نفس صيغة الأصل' : S.fmt.toUpperCase());
+  function updateChrome() {
+    const it = S.item;
+    $('empty').hidden = !!items.length;
+    $('sampleTag').hidden = !S.sample || S.transparent || !!items.length;
+    const meta = $('meta');
+    if (it && !S.transparent) {
+      meta.hidden = false;
+      meta.textContent = it.w + '×' + it.h + ' · ' + fmtBytes(it.size) + (it.dur ? ' · ' + fmtTime(it.dur) : '');
+    } else meta.hidden = true;
+    $('audioRow').hidden = !items.some((x) => x.kind === 'video') || S.transparent || S.sticker;
+    cv.classList.toggle('checker', S.transparent || !!(it && it.alpha));
+    $('mp4Btn').hidden = !MP4_OK;
+    const n = items.length;
+    $('summary').textContent = S.transparent ? 'نص شفاف · ' + fmtLabel().replace('نفس صيغة الأصل', 'GIF') : S.sticker ? (n ? n + (n > 1 ? ' استيكر' : ' استيكر') : 'مفيش استيكرات لسه') + ' · ' + (S.crop ? 'قص تلقائي' : '512×512') + ' · WebP' : (n ? n + (n > 1 ? ' ملفات' : ' ملف') : 'مفيش ملفات لسه') + ' · ' + fmtLabel() + ' · ' + sizeLabel();
+    $('saveAll').textContent = S.transparent ? 'نزّل النص الشفاف' : n > 1 ? 'نزّل الكل (' + n + ')' : 'نزّل';
+    $('saveOne').hidden = n < 2 || S.transparent;
+    let hint = '';
+    if (S.fmt === 'auto') hint = 'الصور بتفضل بنفس صيغتها، الفيديو بيتحفظ كفيديو، والجيف بيفضل جيف متحرك.';
+    else if (S.fmt === 'gif') hint = 'الجيف بيحدّ الألوان لـ 256، فحجمه بيطلع أكبر من الفيديو. الأفضل للصور PNG أو JPG.';
+    else if (S.fmt === 'webm') hint = 'جودة عالية بحجم قريب من الأصل. بيحافظ على الصوت.';
+    else if (S.fmt === 'mp4') hint = 'متوافق مع أغلب التطبيقات. بيحافظ على الصوت.';
+    else if (S.fmt === 'png') hint = 'من غير ضغط وبجودة كاملة، وحجمه بيكبر مع الصور الحقيقية.';
+    else if (S.fmt === 'jpg') hint = 'أصغر حجم للصور الحقيقية. الفيديو والجيف بيطلعوا صورة ثابتة.';
+    $('fmtHint').textContent = hint;
+    renderTrack();
+  }
+
+  /* ---------- saving ---------- */
+  let downloads = null;
+  const standalone = !window.claude;
+  (async () => {
+    try { downloads = window.claude ? await window.claude.use('downloads') : null; } catch (e) { downloads = null; }
+    if (!downloads && !standalone) { $('saveAll').disabled = true; $('saveOne').disabled = true; say('الحفظ مش متاح في العرض ده. افتح الصفحة من المتصفح.'); }
+  })();
+  const errText = (e) => {
+    const c = e && e.code ? e.code : '';
+    if (c === 'declined') return 'اتلغى الحفظ.';
+    if (c === 'no_plugin') return 'مكتبة الحفظ مش موجودة في التطبيق. أعد بناء التطبيق.';
+    if (c === 'too_large') return 'الملف كبير. اختار حجم أصغر.';
+    if (c === 'rate_limited') return 'فيه نافذة حفظ مفتوحة. اقفلها وجرب تاني.';
+    return 'حصلت مشكلة' + (c ? ' (' + c + ')' : e && e.message ? ' (' + String(e.message).slice(0, 60) + ')' : '') + '.';
+  };
+  const toB64 = (b) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.onerror = () => rej(r.error); r.readAsDataURL(b); });
+  async function nativeSave(blob, name) {
+    const P = (window.Capacitor && window.Capacitor.Plugins) || {}, FS = P.Filesystem, SH = P.Share;
+    if (!FS || !SH) { const e = new Error('plugins'); e.code = 'no_plugin'; throw e; }
+    const path = 'tjo7/' + name.replace(/[\\/:*?"<>|]+/g, '_'), CH = 3 * 256 * 1024;
+    for (let off = 0, first = true; first || off < blob.size; off += CH, first = false) {
+      const data = await toB64(blob.slice(off, off + CH));
+      if (first) await FS.writeFile({ path, data, directory: 'CACHE', recursive: true });
+      else await FS.appendFile({ path, data, directory: 'CACHE' });
+    }
+    const { uri } = await FS.getUri({ path, directory: 'CACHE' });
+    try { await SH.share({ title: name, dialogTitle: 'احفظ أو ابعت الملف', files: [uri] }); }
+    catch (e) { if (/cancel/i.test((e && e.message) || '')) { const d = new Error('cancel'); d.code = 'declined'; throw d; } throw e; }
+  }
+  if (NATIVE) { try { window.Capacitor.Plugins.Filesystem.rmdir({ path: 'tjo7', directory: 'CACHE', recursive: true }).catch(() => {}); } catch (e) { /* ignore */ } }
+  async function saveBlob(blob, name) {
+    if (NATIVE) return nativeSave(blob, name);
+    const data = (() => { try { return new File([blob], name, { type: blob.type, lastModified: Date.now() }); } catch (e) { return blob; } })();
+    if (downloads) return downloads.save({ filename: name, data });
+    if (!standalone) { const err = new Error('الحفظ لسه بيجهز'); err.code = 'unavailable'; throw err; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  const baseName = (n) => (n || 'file').replace(/\.[^.]+$/, '').replace(/[^\w\-.؀-ۿ ]+/g, '_').slice(0, 40) || 'file';
+  const shortName = (n) => n.replace(/^\d+-/, '');
+
+  let results = [];
+  function packZip(res) {
+    const p = res[0] && res[0].pack;
+    if (p && res.every((r) => r.pack === p)) return { file: p.name + '-stamped.zip', entries: [...res.map((r) => ({ name: r.entry, blob: r.blob })), ...p.others.map((o) => ({ name: o.name, blob: new Blob([o.bytes]) }))] };
+    return { file: 't.jo7-stamped.zip', entries: res.map((r) => ({ name: r.entry || r.file, blob: r.blob })) };
+  }
+  async function saveZip(res) { const z = packZip(res); return saveBlob(await makeZip(z.entries), z.file); }
+  function renderResults() {
+    const box = $('results'); box.textContent = '';
+    box.hidden = !results.length;
+    results.forEach((r) => {
+      const row = document.createElement('div'); row.className = 'res';
+      const nm = document.createElement('div'); nm.className = 'rn'; nm.textContent = r.file;
+      const st = document.createElement('div'); st.className = 'rs num';
+      const after = document.createElement('span'); after.textContent = (r.src ? fmtBytes(r.src) + ' ← ' : '') + fmtBytes(r.blob.size);
+      st.appendChild(after);
+      const tag = document.createElement('span');
+      if (r.limit) {
+        const okk = r.blob.size <= r.limit;
+        tag.className = 'tag ' + (okk ? 'ok' : 'warn');
+        tag.textContent = okk ? 'مناسب لواتساب' : 'أكبر من حد واتساب (' + fmtBytes(r.limit) + ')';
+        st.appendChild(tag);
+      } else if (r.src) {
+        const ratio = r.blob.size / r.src;
+        tag.className = 'tag ' + (ratio <= 1.5 ? 'ok' : 'warn');
+        tag.textContent = ratio <= 0.95 ? 'أصغر من الأصل' : ratio <= 1.5 ? 'قريب من الأصل' : 'أكبر ×' + (ratio >= 10 ? Math.round(ratio) : ratio.toFixed(1));
+        st.appendChild(tag);
+      }
+      const b = document.createElement('button'); b.className = 'btn small'; b.type = 'button'; b.textContent = 'نزّل';
+      b.addEventListener('click', async () => { try { await saveBlob(r.blob, r.file); say('تم الحفظ.'); } catch (e) { console.error(e); say(errText(e)); } });
+      row.append(nm, st, b); box.appendChild(row);
+    });
+    if (results.length > 1) {
+      const z = document.createElement('button'); z.className = 'btn'; z.type = 'button'; z.textContent = 'نزّل الكل في ملف ZIP';
+      z.addEventListener('click', async () => {
+        try { say('بجمع الملفات…'); await saveZip(results); say('تم الحفظ.'); } catch (e) { console.error(e); say(errText(e)); }
+      });
+      box.appendChild(z);
+    }
+    const over = results.filter((r) => r.limit && r.blob.size > r.limit).length;
+    if (over) say(over + ' استيكر أكبر من حد واتساب حتى بعد تقليل الجودة. جرب تقلل طول الاستيكر أو عدد لقطاته.');
+  }
+
+  async function run(all) {
+    const btns = [$('saveAll'), $('saveOne')];
+    btns.forEach((b) => (b.disabled = true));
+    const keep = cur;
+    let out = [];
+    $('prog').hidden = false; $('progBar').style.width = '0%';
+    try {
+      if (S.transparent) {
+        P.k = 0; P.n = 1; const fmt = fmtFor(null);
+        say('بجهز…');
+        out = [{ file: 't.jo7-overlay.' + fmt, blob: await makeOne(fmt), src: 0 }];
+      } else {
+        if (!items.length) { say('ضيف صورة أو فيديو الأول.'); return; }
+        const idx = all ? items.map((_, i) => i) : [cur];
+        P.n = idx.length;
+        for (let k = 0; k < idx.length; k++) {
+          P.k = k;
+          const it = items[idx[k]]; applyItem(it);
+          const fmt = fmtFor(it);
+          prog(0, 'بجهز…');
+          const blob = await makeOne(fmt);
+          const lim = S.sticker && fmt === 'webp' ? (blob.__anim ? WA.animMax : WA.staticMax) : 0;
+          const packed = S.sticker && it.pack && all;
+          const file = packed ? it.entry.split('/').pop() : baseName(it.name) + '.' + fmt;
+          out.push({ file, entry: packed ? it.entry : String(k + 1).padStart(2, '0') + '-' + file, blob, src: it.size, limit: lim, pack: packed ? it.pack : null });
+          await tick0();
+        }
+      }
+      results = out; renderResults();
+      $('progBar').style.width = '100%';
+    } catch (e) {
+      console.error(e && e.stack || e);
+      say('مقدرتش أجهز الملفات. جرب حجم أصغر أو ملفات أقل.' + (e && e.message ? ' (' + String(e.message).slice(0, 60) + ')' : ''));
+      return;
+    } finally {
+      if (keep >= 0 && items[keep]) { applyItem(items[keep]); if (S.vid) S.vid.play().catch(() => {}); } else if (!items.length) useSample();
+      dirty = true; btns.forEach((b) => (b.disabled = false)); setTimeout(() => { $('prog').hidden = true; }, 600);
+      updateChrome();
+    }
+    const keepMsg = status0();
+    try {
+      say(out.length > 1 ? 'بجمع الملفات في ZIP…' : 'بحفظ…');
+      if (out.length === 1) await saveBlob(out[0].blob, out[0].file);
+      else await saveZip(out);
+      say('تم الحفظ.' + (keepMsg ? ' ' + keepMsg : ''));
+    } catch (e) {
+      console.error(e && e.stack || e);
+      say(errText(e) + (out.length ? ' الملفات جاهزة، نزّلها من القايمة اللي فوق.' : ''));
+    }
+  }
+  const status0 = () => { const o = results.filter((r) => r.limit && r.blob.size > r.limit).length; return o ? '(' + o + ' استيكر أكبر من حد واتساب)' : ''; };
+  $('saveAll').addEventListener('click', () => run(true));
+  $('saveOne').addEventListener('click', () => run(false));
+
+  applyPreset('credit');
+  useSample();
+  renderFilm();
+})();
+
+</script>
+</body></html>

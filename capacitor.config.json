@@ -1,0 +1,7 @@
+{
+  "appId": "com.tjo7.stamp",
+  "appName": "ختم t.jo7",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false }
+}

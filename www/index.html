@@ -1436,7 +1436,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   async function nativeSave(blob, name) {
     const uri = await writeCache(blob, name);
     let SD = null;
-    try { SD = window.Capacitor.registerPlugin('SaveToDevice'); } catch (e) { SD = null; }
+    try { SD = (window.Capacitor.Plugins || {}).SaveToDevice || null; } catch (e) { SD = null; }
     if (SD) {
       try {
         const r = await SD.save({ path: uri, name, mime: mimeOf(blob, name) });

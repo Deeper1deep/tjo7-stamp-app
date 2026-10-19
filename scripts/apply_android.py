@@ -23,6 +23,36 @@ with open(bg, "w", encoding="utf-8") as fh:
     fh.write('<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#2A47E8</color>\n</resources>\n')
 JAVA_DST = "android/app/src/main/java/com/tjo7/stamp"
 os.makedirs(JAVA_DST, exist_ok=True)
-for f in glob.glob("resources/android/java/*.java"):
+javas = glob.glob("resources/android/java/*.java")
+if not javas:
+    sys.exit("ERROR: resources/android/java/*.java missing - upload the whole project folder")
+for f in javas:
     shutil.copy(f, JAVA_DST)
-print("icons and native plugin applied")
+
+# --- fixed signing key + increasing versionCode, so a new APK installs OVER the old one ---
+import shutil as _sh
+GR = "android/app/build.gradle"
+KS_SRC = "signing/tjo7.keystore"
+if not os.path.isfile(KS_SRC):
+    sys.exit("ERROR: signing/tjo7.keystore missing - upload the whole project folder")
+_sh.copy(KS_SRC, "android/app/tjo7.keystore")
+g = open(GR, encoding="utf-8").read()
+if "tjo7.keystore" not in g:
+    sign = """signingConfigs {
+        tjo7 {
+            storeFile file('tjo7.keystore')
+            storePassword 'tjo7stamp'
+            keyAlias 'tjo7'
+            keyPassword 'tjo7stamp'
+        }
+    }
+    buildTypes {
+        debug { signingConfig signingConfigs.tjo7 }"""
+    if g.count("buildTypes {") != 1:
+        sys.exit("ERROR: unexpected build.gradle layout (buildTypes)")
+    g = g.replace("buildTypes {", sign, 1)
+    g, n = re.subn(r"versionCode\s+\d+", 'versionCode Integer.parseInt(System.getenv("GITHUB_RUN_NUMBER") ?: "1")', g, count=1)
+    if n != 1:
+        sys.exit("ERROR: versionCode not found in build.gradle")
+    open(GR, "w", encoding="utf-8").write(g)
+print("icons, native plugin and fixed signing applied")

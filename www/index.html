@@ -1,5 +1,4 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#2a47e8"><title>ختم t.jo7</title><style>@font-face{font-family:Poppins;font-weight:400;src:url(fonts/Poppins-Regular.ttf) format("truetype")}@font-face{font-family:Poppins;font-weight:700;src:url(fonts/Poppins-Bold.ttf) format("truetype")}body{margin:0}</style></head><body>
-
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Lalezar&family=Poppins:wght@400;700&display=swap">
 <style>
 /* Layout: preview stage + timeline + filmstrip on one side, setting cards on the other, one docked action bar at the bottom. Stacks to one column on phones. */
@@ -231,6 +230,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
         <button class="btn small" type="button" id="resetAllItems">رجّع كل الملفات للإعداد العام</button>
         <button class="btn small" type="button" id="resetDefaults">رجّع الإعدادات الافتراضية</button>
         <p class="hint">إعداداتك بتتحفظ لوحدها وتفضل زي ما هي لما تفتح الأداة تاني.</p>
+        <p class="hint" id="buildTag"></p>
       </div>
       <div class="card">
         <h2>شكل الحقوق</h2>
@@ -340,6 +340,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   const ACC_ADD = NATIVE ? '*/*' : 'image/*,video/*,.webm,.mp4,.mov,.gif';
   if (NATIVE) $('file').accept = '*/*';
+  if (NATIVE) { const bt = $('buildTag'); if (bt) bt.textContent = 'نسخة التطبيق: v4-2026-10-19'; }
   const cv = $('cv'), cx = cv.getContext('2d');
   let dirty = true;
   const items = [];
@@ -1404,7 +1405,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   const errText = (e) => {
     const c = e && e.code ? e.code : '';
     if (c === 'declined') return 'اتلغى الحفظ.';
-    if (c === 'save_failed') return 'مقدرتش أحفظ في التليفون' + (e && e.message ? ' (' + String(e.message).slice(0, 50) + ')' : '') + '. جرب زرار المشاركة.';
+    if (c === 'save_failed') return 'مقدرتش أحفظ في التليفون' + (e && e.message ? ' (' + String(e.message).slice(0, 120) + ')' : '') + '. جرب زرار المشاركة جنب الملف.';
     if (c === 'no_plugin') return 'مكتبة الحفظ مش موجودة في التطبيق. أعد بناء التطبيق.';
     if (c === 'too_large') return 'الملف كبير. اختار حجم أصغر.';
     if (c === 'rate_limited') return 'فيه نافذة حفظ مفتوحة. اقفلها وجرب تاني.';
@@ -1431,30 +1432,34 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     try { await SH.share({ title: name, dialogTitle: 'ابعت الملف', files: [uri] }); }
     catch (e) { if (/cancel/i.test((e && e.message) || '')) { const d = new Error('cancel'); d.code = 'declined'; throw d; } throw e; }
   }
-  let savedWhere = ''; const savedAll = new Set();
+  let savedWhere = ''; let fallbackWhy = ''; const savedAll = new Set();
+  const nativeNote = () => (NATIVE && fallbackWhy ? ' اتفتحت قايمة المشاركة لأن الحفظ المباشر مش شغال (' + fallbackWhy + ').' : '');
   const folderAr = (f) => f.replace('Pictures', 'الصور').replace('Movies', 'الفيديو').replace('Download', 'التنزيلات');
+  const BUILD = 'v4-2026-10-19';
+  const callNative = (plugin, method, opts) => {
+    const C = window.Capacitor;
+    if (C && typeof C.nativePromise === 'function') return C.nativePromise(plugin, method, opts);
+    const P = C && C.Plugins && C.Plugins[plugin];
+    if (P && typeof P[method] === 'function') return P[method](opts);
+    return Promise.reject(new Error('plugin_missing:' + plugin));
+  };
   async function nativeSave(blob, name) {
+    fallbackWhy = '';
     const uri = await writeCache(blob, name);
-    let SD = null;
-    try { SD = (window.Capacitor.Plugins || {}).SaveToDevice || null; } catch (e) { SD = null; }
-    if (SD) {
-      try {
-        const r = await SD.save({ path: uri, name, mime: mimeOf(blob, name) });
-        savedWhere = r && r.folder ? r.folder : ''; if (savedWhere) savedAll.add(savedWhere);
-        return;
-      } catch (e) {
-        const msg = String((e && e.message) || e);
-        if (!/old_android|not implemented|UNIMPLEMENTED/i.test(msg)) { const err = new Error(msg); err.code = 'save_failed'; throw err; }
-      }
+    try {
+      const r = await callNative('SaveToDevice', 'save', { path: uri, name, mime: mimeOf(blob, name) });
+      savedWhere = r && r.folder ? r.folder : ''; if (savedWhere) savedAll.add(savedWhere);
+      return;
+    } catch (e) {
+      const msg = String((e && (e.message || e.errorMessage)) || e);
+      if (/old_android/i.test(msg)) { fallbackWhy = 'أندرويد أقدم من 10'; savedWhere = ''; await nativeShare(blob, name); return; }
+      const err = new Error(msg); err.code = 'save_failed'; throw err; // show the real reason; the row has a Share button
     }
-    savedWhere = '';
-    await nativeShare(blob, name); // very old Android: let the user pick where to save
   }
   if (NATIVE) { try { window.Capacitor.Plugins.Filesystem.rmdir({ path: 'tjo7', directory: 'CACHE', recursive: true }).catch(() => {}); } catch (e) { /* ignore */ } }
   async function saveBlob(blob, name) {
     if (NATIVE) return nativeSave(blob, name);
-    const data = (() => { try { return new File([blob], name, { type: blob.type, lastModified: Date.now() }); } catch (e) { return blob; } })();
-    if (downloads) return downloads.save({ filename: name, data });
+    if (downloads) return downloads.save({ filename: name, data: blob });
     if (!standalone) { const err = new Error('الحفظ لسه بيجهز'); err.code = 'unavailable'; throw err; }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = name;
@@ -1558,7 +1563,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     } finally { restoreView(keep); $('progBar').style.width = '100%'; setTimeout(() => { $('prog').hidden = true; }, 600); }
     renderResults();
     if (ok) {
-      try { savedAll.clear(); await saveBlob(r.blob, r.file); say('تم الحفظ' + (NATIVE && savedAll.size ? ' في ' + [...savedAll].map(folderAr).join(' و') : '') + '.'); }
+      try { savedAll.clear(); await saveBlob(r.blob, r.file); say('تم الحفظ' + (NATIVE && savedAll.size ? ' في ' + [...savedAll].map(folderAr).join(' و') : '') + '.' + nativeNote()); }
       catch (e) { console.error(e); say(errText(e) + ' الملف جاهز، نزّله من القايمة.'); }
     }
   }
@@ -1607,7 +1612,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
       else if (NATIVE && !packOnly) {
         for (let i = 0; i < good.length; i++) { say('بحفظ ' + (i + 1) + ' من ' + good.length + '…'); await saveBlob(good[i].blob, good[i].file); }
       } else await saveZip(good);
-      say('تم الحفظ' + (NATIVE && savedAll.size ? ' في ' + [...savedAll].map(folderAr).join(' و') : '') + '.' + (keepMsg ? ' ' + keepMsg : ''));
+      say('تم الحفظ' + (NATIVE && savedAll.size ? ' في ' + [...savedAll].map(folderAr).join(' و') : '') + '.' + nativeNote() + (keepMsg ? ' ' + keepMsg : ''));
     } catch (e) {
       console.error(e && e.stack || e);
       say(errText(e) + (good.length ? ' الملفات جاهزة، نزّلها من القايمة اللي فوق.' : '') + (failedN ? ' ' + failedN + ' ملف فشل.' : ''));
@@ -1653,4 +1658,3 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 })();
 
 </script>
-</body></html>

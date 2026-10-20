@@ -377,7 +377,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     return [512, 512];
   };
   const srcDims = () => (S.transparent ? [1200, 360] : S.sticker ? stkDims() : [S.w, S.h]);
-  const showAt = (t) => (S.mode === 'static' ? true : (t >= 0.999 && t < 1.999));
+  const showAt = (t) => { if (S.mode === 'static') return true; const m = t % 3; return m >= 0.999 && m < 1.999; }; // blink: the credit pulses once every 3 s
 
   /* ---------- drawing (shared by preview and export) ---------- */
   function draw(ctx, w, h, show) {
@@ -450,7 +450,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   function renderTrack() {
     if (S.mode === 'blink') {
       band.style.left = '33.33%'; band.style.width = '33.33%';
-      tnote.textContent = 'الحقوق بتظهر من الثانية 1 للثانية 2، والملف بيتعمل مدته 3 ثواني.';
+      tnote.textContent = S.kind === 'image' || S.transparent ? 'الحقوق بتظهر من الثانية 1 للثانية 2، والملف بيتعمل مدته 3 ثواني.' : 'الحقوق بتنبض (ثانية ظاهرة كل 3 ثواني) والفيديو بيفضل بطوله.';
     } else {
       band.style.left = '0'; band.style.width = '100%';
       tnote.textContent = S.kind === 'image' || S.transparent ? 'الحقوق ظاهرة طول الوقت.' : 'الحقوق ظاهرة طول مدة الملف.';
@@ -587,8 +587,8 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   }
   const vidLen = () => (S.src && S.src.duration && isFinite(S.src.duration) ? S.src.duration : 3);
   function clipLen(kind) {
-    if (S.mode === 'blink') return 3;
     const cap = kind === 'gif' ? 15 : 120;
+    if (S.mode === 'blink' && (S.transparent || S.kind === 'image')) return 3; // a video keeps its full length in blink mode
     if (S.kind === 'video' && !S.transparent) return Math.min(vidLen(), cap);
     if (S.kind === 'anim' && !S.transparent) return Math.min(S.anim.total, cap);
     return 3;
@@ -777,7 +777,8 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     const chunks = [];
     rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
     const done = new Promise((r) => { rec.onstop = r; });
-    if (vid) { try { vid.currentTime = 0; await vid.play(); } catch (e) {} }
+    const wasLoop = vid ? vid.loop : false;
+    if (vid) { vid.loop = false; try { vid.currentTime = 0; await vid.play(); } catch (e) {} }
     const frame = (t) => { if (S.kind === 'anim' && S.anim && !S.transparent) S.anim.render(t); draw(g, w, h, showAt(t)); };
     frame(0);
     rec.start(250);
@@ -785,7 +786,8 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     await new Promise((res) => {
       const step = (now) => {
         const t = (now - start) / 1000;
-        if (t >= len) { res(); return; }
+        // on a slow phone the video may lag behind the clock: wait (max 3 s) until it really reaches the end
+        if (t >= len && (!vid || vid.ended || vid.currentTime >= len - 0.05 || t >= len + 3)) { res(); return; }
         frame(t); prog(t / len, 'بسجّل… ' + Math.max(0, len - t).toFixed(0) + ' ث (سيب الصفحة مفتوحة)');
         requestAnimationFrame(step);
       };
@@ -795,6 +797,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     await new Promise((r) => setTimeout(r, 150));
     const elapsed = performance.now() - start;
     rec.stop(); await done;
+    if (vid) { vid.loop = wasLoop; if (wasLoop) vid.play().catch(() => {}); }
     if (unmute) vid.muted = true;
     let buf = await new Blob(chunks).arrayBuffer();
     if (kind === 'webm') buf = fixWebmDuration(buf, elapsed - 150);
@@ -1505,6 +1508,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
         tag.textContent = ratio <= 0.95 ? 'أصغر من الأصل' : ratio <= 1.5 ? 'قريب من الأصل' : 'أكبر ×' + (ratio >= 10 ? Math.round(ratio) : ratio.toFixed(1));
         st.appendChild(tag);
       }
+      if (r.cut) { const ct = document.createElement('span'); ct.className = 'tag warn'; ct.textContent = 'اتقص: ' + Math.round(r.cut.kept) + ' ث من ' + Math.round(r.cut.full) + ' ث'; st.appendChild(ct); }
       const b = document.createElement('button'); b.className = 'btn small'; b.type = 'button'; b.textContent = 'نزّل';
       b.addEventListener('click', async () => { try { await saveBlob(r.blob, r.file); say('تم الحفظ.'); } catch (e) { console.error(e); say(errText(e)); } });
       row.append(nm, st);
@@ -1539,9 +1543,13 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     prog(0, 'بجهز…');
     const blob = await makeOne(fmt);
     const lim = S.sticker && fmt === 'webp' ? (blob.__anim ? WA.animMax : WA.staticMax) : 0;
+    let cut = null;
+    { const full = S.transparent ? 0 : S.kind === 'video' ? vidLen() : S.kind === 'anim' ? S.anim.total : 0;
+      const kept = fmt === 'gif' ? clipLen('gif') : fmt === 'webm' || fmt === 'mp4' ? clipLen('video') : fmt === 'webp' ? Math.min(full, lim ? WA.maxSec : 30) : full;
+      if (full && kept < full - 0.3) cut = { kept, full }; }
     const packed = !!(S.sticker && it.pack && all);
     const file = packed ? it.entry.split('/').pop() : baseName(it.name) + '.' + fmt;
-    return { file, entry: packed ? it.entry : String(k + 1).padStart(2, '0') + '-' + file, blob, src: it.size, limit: lim, pack: packed ? it.pack : null, itemId: it.id, k, all, failed: false, err: '' };
+    return { file, entry: packed ? it.entry : String(k + 1).padStart(2, '0') + '-' + file, blob, src: it.size, limit: lim, pack: packed ? it.pack : null, itemId: it.id, k, all, failed: false, err: '', cut };
   }
   function restoreView(keep) {
     if (keep >= 0 && items[keep]) { applyItem(items[keep]); if (S.vid) S.vid.play().catch(() => {}); } else if (!items.length) useSample();
@@ -1571,7 +1579,10 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     const btns = [$('saveAll'), $('saveOne')];
     btns.forEach((b) => (b.disabled = true));
     const keep = cur;
-    let out = [];
+    let out = [], crash = null;
+    savedAll.clear();
+    results = out; // finished files stay in the list even if the batch breaks half-way
+    const directSave = () => NATIVE && !(S.sticker && all);
     $('prog').hidden = false; $('progBar').style.width = '0%';
     try {
       if (S.transparent) {
@@ -1585,11 +1596,17 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
         for (let k = 0; k < idx.length; k++) {
           P.k = k;
           const it = items[idx[k]];
-          try { out.push(await processItem(it, k, all)); }
+          try {
+            const r = await processItem(it, k, all); out.push(r);
+            if (directSave() && idx.length > 1) { // already on the phone, so nothing is lost if the app dies later
+              try { say('بحفظ ' + (k + 1) + ' من ' + idx.length + '…'); await saveBlob(r.blob, r.file); r.saved = true; } catch (e) { console.error(e); }
+            }
+          }
           catch (e) {
             console.error(e && e.stack || e);
             out.push({ file: it.name, failed: true, err: errShort(e), itemId: it.id, k, all, src: it.size });
           }
+          renderResults();
           await tick0();
         }
       }
@@ -1597,20 +1614,25 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
       $('progBar').style.width = '100%';
     } catch (e) {
       console.error(e && e.stack || e);
-      say('مقدرتش أجهز الملفات. جرب حجم أصغر أو ملفات أقل.' + (e && e.message ? ' (' + String(e.message).slice(0, 60) + ')' : ''));
-      return;
+      crash = e;
+      results = out; try { renderResults(); } catch (e2) { /* ignore */ }
+      if (!out.some((r) => !r.failed)) {
+        say('مقدرتش أجهز الملفات. جرب حجم أصغر أو ملفات أقل.' + (e && e.message ? ' (' + String(e.message).slice(0, 60) + ')' : ''));
+        return;
+      }
     } finally {
       restoreView(keep); btns.forEach((b) => (b.disabled = false)); setTimeout(() => { $('prog').hidden = true; }, 600);
     }
     const good = out.filter((r) => !r.failed), failedN = out.length - good.length;
-    const keepMsg = [status0(), failedN ? failedN + ' ملف فشل، اضغط "أعد المحاولة" جنبه.' : ''].filter(Boolean).join(' ');
+    const cutN = good.filter((r) => r.cut).length;
+    const keepMsg = [status0(), cutN ? cutN + ' فيديو اتقص لأنه أطول من الحد (GIF حتى 15 ث، واستيكر واتساب حتى 10 ث). اختار WebM أو MP4 عشان يفضل بطوله.' : '', failedN ? failedN + ' ملف فشل، اضغط "أعد المحاولة" جنبه.' : '', crash ? 'العملية وقفت في النص (' + String((crash && crash.message) || crash).slice(0, 50) + ') بس الملفات اللي خلصت اتحفظت.' : ''].filter(Boolean).join(' ');
     if (!good.length) { say('كل الملفات فشلت. اضغط "أعد المحاولة" جنب كل ملف.'); return; }
     try {
       say(good.length > 1 ? 'بجمع الملفات…' : 'بحفظ…');
-      const packOnly = S.sticker && good.every((r) => r.pack); savedAll.clear();
+      const packOnly = S.sticker && good.every((r) => r.pack);
       if (good.length === 1) await saveBlob(good[0].blob, good[0].file);
       else if (NATIVE && !packOnly) {
-        for (let i = 0; i < good.length; i++) { say('بحفظ ' + (i + 1) + ' من ' + good.length + '…'); await saveBlob(good[i].blob, good[i].file); }
+        for (let i = 0; i < good.length; i++) { if (good[i].saved) continue; say('بحفظ ' + (i + 1) + ' من ' + good.length + '…'); await saveBlob(good[i].blob, good[i].file); good[i].saved = true; }
       } else await saveZip(good);
       say('تم الحفظ' + (NATIVE && savedAll.size ? ' في ' + [...savedAll].map(folderAr).join(' و') : '') + '.' + nativeNote() + (keepMsg ? ' ' + keepMsg : ''));
     } catch (e) {

@@ -20,7 +20,7 @@ for d in sorted(glob.glob(os.path.join(SRC, "mipmap-*"))):
 bg = os.path.join(RES, "values", "ic_launcher_background.xml")
 os.makedirs(os.path.dirname(bg), exist_ok=True)
 with open(bg, "w", encoding="utf-8") as fh:
-    fh.write('<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#2A47E8</color>\n</resources>\n')
+    fh.write('<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#0E1330</color>\n</resources>\n')
 JAVA_DST = "android/app/src/main/java/com/tjo7/stamp"
 os.makedirs(JAVA_DST, exist_ok=True)
 javas = glob.glob("resources/android/java/*.java")

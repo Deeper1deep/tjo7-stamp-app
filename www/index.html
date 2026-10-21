@@ -1676,6 +1676,36 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   $('saveAll').addEventListener('click', () => run(true));
   $('saveOne').addEventListener('click', () => run(false));
 
+  /* Android: files shared from the gallery (Share -> this app) arrive through the ShareReceiver plugin */
+  if (NATIVE) {
+    let pulling = false, again = false;
+    const pullShared = async () => {
+      if (pulling) { again = true; return; }
+      pulling = true;
+      try {
+        const r = await callNative('ShareReceiver', 'getShared', {});
+        const list = (r && r.files) || [];
+        if (list.length) {
+          const files = [];
+          for (const f of list) {
+            try {
+              const res = await fetch(window.Capacitor.convertFileSrc(f.path));
+              if (!res.ok) throw new Error('http ' + res.status);
+              const blob = await res.blob();
+              files.push(new File([blob], f.name || 'shared', { type: f.mime || blob.type || '' }));
+            } catch (e) { console.error(e); }
+          }
+          if (files.length) { say('استقبلت ' + files.length + ' ملف من المعرض.'); await addFiles(files); }
+          else say('مقدرتش أفتح الملفات اللي اتشاركت. جرب تختارها من جوا الأداة.');
+          try { await callNative('ShareReceiver', 'cleanup', {}); } catch (e) { /* ignore */ }
+        }
+      } catch (e) { /* the plugin is missing in an old build: nothing was shared */ }
+      finally { pulling = false; if (again) { again = false; pullShared(); } }
+    };
+    window.addEventListener('tjo7shared', pullShared);
+    pullShared();
+  }
+
   applyPreset('credit');
   const DEFAULTS_TEXT = '@t.jo7';
   function loadSaved() {

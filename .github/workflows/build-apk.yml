@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -32,6 +34,9 @@ jobs:
       - name: Verify native save plugin is in the project
         run: grep -q SaveToDevicePlugin android/app/src/main/java/com/tjo7/stamp/MainActivity.java && echo 'native save plugin OK'
 
+      - name: Verify the share target is in the manifest
+        run: grep -q "android.intent.action.SEND" android/app/src/main/AndroidManifest.xml && grep -q ShareReceiverPlugin android/app/src/main/java/com/tjo7/stamp/MainActivity.java && echo 'share target OK'
+
       - name: Verify fixed signing key is wired in
         run: grep -q "signingConfigs.tjo7" android/app/build.gradle && grep -q GITHUB_RUN_NUMBER android/app/build.gradle && echo 'signing OK'
 
@@ -51,3 +56,15 @@ jobs:
           name: tjo7-stamp-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Publish a release with a direct download link
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk tjo7-stamp.apk
+          gh release create "build-${{ github.run_number }}" tjo7-stamp.apk \
+            --title "ختم t.jo7 - بناء ${{ github.run_number }}" \
+            --notes "نزّل tjo7-stamp.apk وثبّته فوق النسخة القديمة." \
+            --latest
+          # keep only the 5 newest releases
+          gh release list --limit 100 --json tagName --jq '.[5:][].tagName' | xargs -r -I{} gh release delete {} --cleanup-tag -y || true

@@ -55,4 +55,20 @@ if "tjo7.keystore" not in g:
     if n != 1:
         sys.exit("ERROR: versionCode not found in build.gradle")
     open(GR, "w", encoding="utf-8").write(g)
-print("icons, native plugin and fixed signing applied")
+# --- let the gallery "Share" menu open files in this app (images, videos, zip packs) ---
+MF = "android/app/src/main/AndroidManifest.xml"
+m = open(MF, encoding="utf-8").read()
+if "android.intent.action.SEND" not in m:
+    filters = ""
+    for act, mimes in (("SEND", ("image/*", "video/*", "application/zip")), ("SEND_MULTIPLE", ("image/*", "video/*"))):
+        for mime in mimes:
+            filters += ('            <intent-filter>\n'
+                        '                <action android:name="android.intent.action.%s" />\n'
+                        '                <category android:name="android.intent.category.DEFAULT" />\n'
+                        '                <data android:mimeType="%s" />\n'
+                        '            </intent-filter>\n') % (act, mime)
+    if m.count("</activity>") < 1:
+        sys.exit("ERROR: AndroidManifest.xml has no <activity>")
+    m = m.replace("</activity>", filters + "        </activity>", 1)
+    open(MF, "w", encoding="utf-8").write(m)
+print("icons, native plugin, fixed signing and share-target applied")

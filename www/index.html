@@ -372,7 +372,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     const btn = $('themeBtn');
     if (btn) btn.addEventListener('click', () => { t = t === 'dark' ? 'light' : 'dark'; apply(); try { localStorage.setItem(key, t); } catch (e) { /* ignore */ } });
   })();
-  if (NATIVE) { const bt = $('buildTag'); if (bt) bt.textContent = 'نسخة التطبيق: v5-2026-10-21'; }
+  if (NATIVE) { const bt = $('buildTag'); if (bt) bt.textContent = 'نسخة التطبيق: v6-2026-11-01'; }
   const cv = $('cv'), cx = cv.getContext('2d');
   let dirty = true;
   const items = [];
@@ -490,7 +490,9 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   }
   let lastShow = null;
   const t0 = performance.now();
+  let exporting = 0;
   function tick(now) {
+    if (exporting) { requestAnimationFrame(tick); return; }
     const wall = (now - t0) / 1000;
     let t = wall % 3, frac = null;
     const live = !S.transparent;
@@ -597,13 +599,30 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     return new Blob(parts, { type: 'image/gif' });
   }
   const tick0 = () => new Promise((r) => setTimeout(r, 0));
+  const nextPaint = () => new Promise((r) => { let d = false; const f = () => { if (!d) { d = true; r(); } }; requestAnimationFrame(f); setTimeout(f, 60); });
   const seekTo = (v, t) => new Promise((res) => {
     let done = false;
-    const fin = () => { if (!done) { done = true; v.removeEventListener('seeked', fin); res(); } };
+    const moved = Math.abs((v.currentTime || 0) - t) > 0.0005;
+    const fin = async () => {
+      if (done) return; done = true; v.removeEventListener('seeked', fin);
+      if (moved) {
+        // wait for the new frame to be presented before anybody draws it (fixes repeated / lagging frames on phones)
+        if (v.requestVideoFrameCallback && (v.__vfcMiss || 0) < 3) {
+          let hit = false;
+          await new Promise((r) => { let d = false; const f = () => { if (!d) { d = true; r(); } }; v.requestVideoFrameCallback(() => { hit = true; f(); }); setTimeout(f, 140); });
+          v.__vfcMiss = hit ? 0 : (v.__vfcMiss || 0) + 1; // this browser does not report frames after a seek: stop waiting for it
+        } else await nextPaint();
+      }
+      res();
+    };
     v.addEventListener('seeked', fin); setTimeout(fin, 900); v.currentTime = t;
   });
   const P = { k: 0, n: 1 };
+  let lastPT = 0, lastPL = '';
   function prog(frac, label) {
+    const now = performance.now();
+    if (label && label === lastPL && now - lastPT < 250 && frac < 1) return; // do not make a busy phone repaint every frame
+    lastPT = now; lastPL = label || '';
     const f = clamp((P.k + clamp(frac, 0, 1)) / P.n, 0, 1);
     $('progBar').style.width = (f * 100).toFixed(1) + '%';
     if (label) say((P.n > 1 ? 'ملف ' + (P.k + 1) + ' من ' + P.n + ': ' : '') + label);
@@ -800,7 +819,10 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     if (!mime) throw new Error(kind);
     const vid = S.kind === 'video' && !S.transparent ? S.src : null;
     const len = clipLen('video');
-    const vstream = c.captureStream(30);
+    const useVFC = !!(vid && vid.requestVideoFrameCallback && window.CanvasCaptureMediaStreamTrack && CanvasCaptureMediaStreamTrack.prototype.requestFrame);
+    const vstream = c.captureStream(useVFC ? 0 : 30);
+    const vtrack = vstream.getVideoTracks()[0];
+    const push = () => { if (useVFC) { try { vtrack.requestFrame(); } catch (e) { /* ignore */ } } };
     let atracks = [], unmute = false;
     if (vid && S.audio && hasAudio(vid)) {
       try { const A = audioFor(S.item); if (A) { await A.ctx.resume(); vid.muted = false; unmute = true; atracks = A.dest.stream.getAudioTracks(); } } catch (e) { atracks = []; }
@@ -814,8 +836,24 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     const frame = (t) => { if (S.kind === 'anim' && S.anim && !S.transparent) S.anim.render(t); draw(g, w, h, showAt(t)); };
     frame(0);
     rec.start(250);
+    push();
     const start = performance.now();
-    await new Promise((res) => {
+    if (useVFC) {
+      await new Promise((res) => {
+        let fin = false, lastCb = performance.now();
+        const done = () => { if (!fin) { fin = true; clearInterval(guard); vid.removeEventListener('ended', done); res(); } };
+        vid.addEventListener('ended', done); // no more frame callbacks arrive after the last frame
+        const guard = setInterval(() => { const n = performance.now(); if (n - lastCb > 1800 || n - start > (len + 6) * 1000) done(); }, 400);
+        const onFrame = (now, meta) => {
+          if (fin) return; lastCb = performance.now();
+          const t = meta && typeof meta.mediaTime === 'number' ? meta.mediaTime : (performance.now() - start) / 1000;
+          if (t >= len - 0.0005 || vid.ended) { done(); return; }
+          frame(t); push(); prog(t / len, 'بسجّل… ' + Math.max(0, len - t).toFixed(0) + ' ث (سيب الصفحة مفتوحة)');
+          vid.requestVideoFrameCallback(onFrame);
+        };
+        vid.requestVideoFrameCallback(onFrame);
+      });
+    } else await new Promise((res) => {
       const step = (now) => {
         const t = (now - start) / 1000;
         // on a slow phone the video may lag behind the clock: wait (max 3 s) until it really reaches the end
@@ -825,7 +863,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
       };
       requestAnimationFrame(step);
     });
-    frame(len);
+    frame(len); push();
     await new Promise((r) => setTimeout(r, 150));
     const elapsed = performance.now() - start;
     rec.stop(); await done;
@@ -1470,7 +1508,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   let savedWhere = ''; let fallbackWhy = ''; const savedAll = new Set();
   const nativeNote = () => (NATIVE && fallbackWhy ? ' اتفتحت قايمة المشاركة لأن الحفظ المباشر مش شغال (' + fallbackWhy + ').' : '');
   const folderAr = (f) => f.replace('Pictures', 'الصور').replace('Movies', 'الفيديو').replace('Download', 'التنزيلات');
-  const BUILD = 'v5-2026-10-21';
+  const BUILD = 'v6-2026-11-01';
   const callNative = (plugin, method, opts) => {
     const C = window.Capacitor;
     if (C && typeof C.nativePromise === 'function') return C.nativePromise(plugin, method, opts);
@@ -1573,7 +1611,9 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     applyItem(it);
     const fmt = fmtFor(it);
     prog(0, 'بجهز…');
-    const blob = await makeOne(fmt);
+    exporting++;
+    let blob;
+    try { blob = await makeOne(fmt); } finally { exporting--; dirty = true; }
     const lim = S.sticker && fmt === 'webp' ? (blob.__anim ? WA.animMax : WA.staticMax) : 0;
     let cut = null;
     { const full = S.transparent ? 0 : S.kind === 'video' ? vidLen() : S.kind === 'anim' ? S.anim.total : 0;
@@ -1620,7 +1660,8 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
       if (S.transparent) {
         P.k = 0; P.n = 1; const fmt = fmtFor(null);
         say('بجهز…');
-        out = [{ file: 't.jo7-overlay.' + fmt, blob: await makeOne(fmt), src: 0 }];
+        exporting++;
+        try { out = [{ file: 't.jo7-overlay.' + fmt, blob: await makeOne(fmt), src: 0 }]; } finally { exporting--; dirty = true; }
       } else {
         if (!items.length) { say('ضيف صورة أو فيديو الأول.'); return; }
         const idx = all ? items.map((_, i) => i) : [cur];

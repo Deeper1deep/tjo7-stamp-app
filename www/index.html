@@ -1423,7 +1423,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   const LS_KEY = 'tjo7.settings.v1';
   const lsGet = () => { try { return JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch (e) { return null; } };
   const lsSet = (o) => { try { localStorage.setItem(LS_KEY, JSON.stringify(o)); } catch (e) { /* ignore */ } };
-  const persist = () => { if (!G) G = pick(S); lsSet({ g: G, text: S.text, fmt: S.fmt, sizeSel: S.sizeSel, audio: S.audio, crop: S.crop }); };
+  const persist = () => { if (!G) G = pick(S); lsSet({ g: Object.assign({}, G, { dx: 0, dy: 0 }), text: S.text, fmt: S.fmt, sizeSel: S.sizeSel, audio: S.audio, crop: S.crop }); };
   ['input', 'click', 'change'].forEach((ev) => $('settings').addEventListener(ev, () => { commit(); persist(); }));
   $('perItem').addEventListener('change', (e) => {
     const it = S.item; if (!it) return;
@@ -1823,8 +1823,6 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     const num = (v, lo, hi) => typeof v === 'number' && v >= lo && v <= hi;
     const g = s.g || {};
     if (['tl', 'tr', 'bl', 'br'].includes(g.corner)) S.corner = g.corner;
-    if (num(g.dx, -100, 100)) S.dx = g.dx;
-    if (num(g.dy, -100, 100)) S.dy = g.dy;
     if (num(g.width, 1, 100)) S.width = g.width;
     if (num(g.margin, 0, 100)) S.margin = g.margin;
     if (num(g.opacity, 0, 100)) S.opacity = g.opacity;

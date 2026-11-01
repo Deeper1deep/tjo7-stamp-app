@@ -98,6 +98,22 @@ button { font: inherit; color: inherit; }
 .empty span { font-size: .85rem; opacity: .75; max-width: 34ch; }
 .empty .pick { margin-top: 6px; background: var(--btn); color: var(--btn-fg); border-radius: 10px; padding: 8px 18px; font-weight: 600; }
 .stage input[type="file"], .addtile input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 0; }
+.movebox { display: grid; gap: 10px; justify-items: start; }
+.movebox .btn[aria-pressed="true"] { background: var(--btn); color: var(--btn-fg); border-color: var(--btn); }
+.dpad { display: grid; grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(2, 48px); gap: 6px; }
+.dpad button { border: 1px solid var(--line); background: var(--panel2); color: var(--fg); border-radius: 12px; font-size: 1.05rem; cursor: pointer; touch-action: manipulation; user-select: none; }
+.dpad button:active { background: var(--accent); color: #fff; }
+.dpad [data-mv="u"] { grid-column: 2; grid-row: 1; } .dpad [data-mv="l"] { grid-column: 1; grid-row: 2; }
+.dpad [data-mv="d"] { grid-column: 2; grid-row: 2; } .dpad [data-mv="r"] { grid-column: 3; grid-row: 2; } .dpad #moveReset { grid-column: 3; grid-row: 1; }
+.stage.moving canvas { touch-action: none; cursor: grab; outline: 2px dashed var(--accent); outline-offset: 2px; }
+.stage.moving input[type="file"], .stage.moving .empty { pointer-events: none; }
+
+@media (max-width: 979px) {
+  .stage.moving { position: sticky; top: 8px; z-index: 6; }
+  #movePanel:not([hidden]) { position: fixed; inset-inline: 0; bottom: 0; z-index: 30; display: flex; align-items: center; justify-content: center; gap: 14px; padding: 10px 14px max(12px, env(safe-area-inset-bottom, 0px)); background: var(--panel); border-top: 1px solid var(--line); box-shadow: 0 -8px 24px rgba(0,0,0,.28); }
+  #movePanel .sub { display: none; }
+}
+
 .sampletag { position: absolute; inset-block-end: 12px; inset-inline-end: 12px; font-size: 12px; background: rgba(0, 0, 0, .6); color: #fff; padding: 3px 9px; border-radius: 6px; }
 
 /* ---- transport ---- */
@@ -286,6 +302,19 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
             </div>
           </div>
         </div>
+        <div class="movebox not-t">
+          <button type="button" class="btn small" id="moveBtn" aria-pressed="false">✥ تحريك الحقوق <span class="num" id="posOut">في الركن</span></button>
+          <div id="movePanel" hidden>
+            <div class="dpad" dir="ltr" role="group" aria-label="أسهم تحريك الحقوق">
+              <button type="button" data-mv="u" aria-label="فوق">▲</button>
+              <button type="button" data-mv="l" aria-label="شمال">◀</button>
+              <button type="button" id="moveReset" aria-label="رجّع للركن">⟲</button>
+              <button type="button" data-mv="r" aria-label="يمين">▶</button>
+              <button type="button" data-mv="d" aria-label="تحت">▼</button>
+            </div>
+            <span class="sub">دوس على السهم (أو امسكه) أو اسحب الحقوق بإصبعك على المعاينة.</span>
+          </div>
+        </div>
         <div class="sl not-t"><label for="size">الحجم <output class="num" id="sizeOut">13%</output></label><input type="range" id="size" min="5" max="70" value="13"></div>
         <div class="sl not-t"><label for="margin">البعد عن الحافة <output class="num" id="marginOut">2%</output></label><input type="range" id="margin" min="0" max="12" step="0.5" value="2"></div>
         <div class="sl"><label for="opacity">الوضوح <output class="num" id="opacityOut">55%</output></label><input type="range" id="opacity" min="10" max="100" step="5" value="55"></div>
@@ -356,7 +385,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const S = {
     src: null, w: 0, h: 0, sample: true, kind: 'image', vid: null, anim: null, item: null, flat: false,
-    corner: 'bl', width: 13, margin: 2, text: '@t.jo7', shadow: 0, opacity: 55, color: '#ffffff',
+    corner: 'bl', dx: 0, dy: 0, moveOn: false, width: 13, margin: 2, text: '@t.jo7', shadow: 0, opacity: 55, color: '#ffffff',
     weight: 400, mode: 'static', transparent: false, fmt: 'auto', sizeSel: 'orig', audio: true, fontOk: false, sticker: false, stickerTouched: false, crop: true,
   };
   const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -372,7 +401,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     const btn = $('themeBtn');
     if (btn) btn.addEventListener('click', () => { t = t === 'dark' ? 'light' : 'dark'; apply(); try { localStorage.setItem(key, t); } catch (e) { /* ignore */ } });
   })();
-  if (NATIVE) { const bt = $('buildTag'); if (bt) bt.textContent = 'نسخة التطبيق: v6-2026-11-01'; }
+  if (NATIVE) { const bt = $('buildTag'); if (bt) bt.textContent = 'نسخة التطبيق: v7-2026-11-01'; }
   const cv = $('cv'), cx = cv.getContext('2d');
   let dirty = true;
   const items = [];
@@ -456,6 +485,10 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     else {
       x = S.corner[1] === 'l' ? pad : w - pad - m.width;
       y = S.corner[0] === 't' ? pad + asc : h - pad - desc;
+      // allowed offset range (fractions of w/h) so the credit never leaves the frame
+      S.lim = { x0: -x / w, x1: (w - m.width - x) / w, y0: (asc - y) / h, y1: (h - desc - y) / h };
+      x += Math.min(Math.max(S.dx * w / 100, -x), w - m.width - x);
+      y += Math.min(Math.max(S.dy * h / 100, asc - y), h - desc - y);
     }
     tx.textBaseline = 'alphabetic'; tx.textAlign = 'left';
     tx.lineJoin = 'round'; tx.lineWidth = lw; tx.strokeStyle = S.color; tx.fillStyle = S.color;
@@ -1284,7 +1317,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
       return { x0, y0, x1: x1 + 1, y1: y1 + 1 };
     } catch (e) { return full; }
   }
-  const KEYS = ['corner', 'width', 'margin', 'opacity', 'shadow', 'weight', 'color', 'mode'];
+  const KEYS = ['corner', 'dx', 'dy', 'width', 'margin', 'opacity', 'shadow', 'weight', 'color', 'mode'];
   const pick = (o) => { const r = {}; KEYS.forEach((k) => { r[k] = o[k]; }); return r; };
   let G = null;
   function commit() { if (!G) G = pick(S); const tgt = S.item && S.item.ov ? S.item.ov : G; KEYS.forEach((k) => { tgt[k] = S[k]; }); }
@@ -1292,6 +1325,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     setRange('size', 'sizeOut', S.width); setRange('margin', 'marginOut', S.margin); setRange('opacity', 'opacityOut', S.opacity); setRange('shadow', 'shadowOut', S.shadow);
     setSeg('segCol', 'col', S.color); setSeg('segW', 'w', S.weight);
     document.querySelectorAll('.corners button').forEach((o) => o.setAttribute('aria-pressed', String(o.dataset.c === S.corner)));
+    $('posOut').textContent = (S.dx || S.dy) ? 'مزاحة يدويًا' : 'في الركن';
     document.querySelectorAll('.mode').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.p === (S.mode === 'static' ? 'credit' : 'blink'))));
     const pi = $('perItem'); pi.checked = !!(S.item && S.item.ov); pi.disabled = !S.item;
     $('perItemNote').textContent = !S.item ? 'ضيف ملف الأول.' : S.item.ov ? 'التعديلات دي على الملف ده بس: ' + S.item.name : 'التعديلات بتتطبق على كل الملفات اللي ملهاش إعدادات خاصة.';
@@ -1406,9 +1440,44 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   $('stkCrop').addEventListener('change', (e) => { S.crop = e.target.checked; dirty = true; updateChrome(); });
   $('stk').addEventListener('change', (e) => { S.stickerTouched = true; setSticker(e.target.checked); updateChrome(); });
   document.querySelectorAll('.corners button').forEach((b) => b.addEventListener('click', () => {
-    S.corner = b.dataset.c;
+    S.corner = b.dataset.c; S.dx = 0; S.dy = 0; $('posOut').textContent = 'في الركن';
     document.querySelectorAll('.corners button').forEach((o) => o.setAttribute('aria-pressed', String(o === b))); dirty = true;
   }));
+  /* ---------- optional: move the credit (arrows + drag on the preview) ---------- */
+  function setOff(dx, dy) {
+    const L = S.lim;
+    if (L) { dx = Math.min(Math.max(dx, L.x0 * 100), L.x1 * 100); dy = Math.min(Math.max(dy, L.y0 * 100), L.y1 * 100); }
+    S.dx = Math.round(dx * 100) / 100; S.dy = Math.round(dy * 100) / 100;
+    $('posOut').textContent = (S.dx || S.dy) ? 'مزاحة يدويًا' : 'في الركن';
+    dirty = true; commit(); persist();
+  }
+  function setMove(on) {
+    S.moveOn = on; $('moveBtn').setAttribute('aria-pressed', String(on)); $('movePanel').hidden = !on;
+    $('stage').classList.toggle('moving', on); dirty = true;
+    if (on) { try { $('stage').scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (e) {} }
+  }
+  $('moveBtn').addEventListener('click', (e) => { e.stopPropagation(); setMove(!S.moveOn); });
+  let rep_ = null;
+  const stepOf = (b) => { const k = b.dataset.mv, s = 0.5; return k === 'l' ? [-s, 0] : k === 'r' ? [s, 0] : k === 'u' ? [0, -s] : [0, s]; };
+  document.querySelectorAll('#movePanel [data-mv]').forEach((b) => {
+    const go = () => { const [a1, b1] = stepOf(b); setOff(S.dx + a1, S.dy + b1); };
+    const stop = () => { clearTimeout(rep_); clearInterval(rep_); rep_ = null; };
+    b.addEventListener('pointerdown', (e) => { e.preventDefault(); stop(); b._pd = true; go(); rep_ = setTimeout(() => { rep_ = setInterval(go, 60); }, 350); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => b.addEventListener(ev, stop));
+    b.addEventListener('click', (e) => { e.stopPropagation(); if (b._pd) { b._pd = false; return; } go(); }); // keyboard activation
+  });
+  $('moveReset').addEventListener('click', (e) => { e.stopPropagation(); S.dx = 0; S.dy = 0; $('posOut').textContent = 'في الركن'; dirty = true; commit(); persist(); });
+  let drag = null;
+  cv.addEventListener('pointerdown', (e) => {
+    if (!S.moveOn || S.transparent || !S.lim) return;
+    const r = cv.getBoundingClientRect(); drag = { x: e.clientX, y: e.clientY, dx: S.dx, dy: S.dy, w: r.width, h: r.height };
+    try { cv.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault();
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    setOff(drag.dx + (e.clientX - drag.x) / drag.w * 100, drag.dy + (e.clientY - drag.y) / drag.h * 100);
+  });
+  ['pointerup', 'pointercancel'].forEach((ev) => cv.addEventListener(ev, () => { drag = null; }));
   function applyPreset(p) {
     const P2 = p === 'credit' ? { mode: 'static', width: 13, margin: 2, opacity: 55, weight: 400 } : { mode: 'blink', width: 24, margin: 3, opacity: 100, weight: 700 };
     Object.assign(S, P2);
@@ -1508,7 +1577,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   let savedWhere = ''; let fallbackWhy = ''; const savedAll = new Set();
   const nativeNote = () => (NATIVE && fallbackWhy ? ' اتفتحت قايمة المشاركة لأن الحفظ المباشر مش شغال (' + fallbackWhy + ').' : '');
   const folderAr = (f) => f.replace('Pictures', 'الصور').replace('Movies', 'الفيديو').replace('Download', 'التنزيلات');
-  const BUILD = 'v6-2026-11-01';
+  const BUILD = 'v7-2026-11-01';
   const callNative = (plugin, method, opts) => {
     const C = window.Capacitor;
     if (C && typeof C.nativePromise === 'function') return C.nativePromise(plugin, method, opts);
@@ -1754,6 +1823,8 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     const num = (v, lo, hi) => typeof v === 'number' && v >= lo && v <= hi;
     const g = s.g || {};
     if (['tl', 'tr', 'bl', 'br'].includes(g.corner)) S.corner = g.corner;
+    if (num(g.dx, -100, 100)) S.dx = g.dx;
+    if (num(g.dy, -100, 100)) S.dy = g.dy;
     if (num(g.width, 1, 100)) S.width = g.width;
     if (num(g.margin, 0, 100)) S.margin = g.margin;
     if (num(g.opacity, 0, 100)) S.opacity = g.opacity;
@@ -1772,7 +1843,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   loadSaved();
   $('resetDefaults').addEventListener('click', () => {
     try { localStorage.removeItem(LS_KEY); } catch (e) { /* ignore */ }
-    S.presetTouched = false; S.corner = 'bl'; S.color = '#ffffff'; S.shadow = 0; applyPreset('credit'); G = pick(S);
+    S.presetTouched = false; S.corner = 'bl'; S.dx = 0; S.dy = 0; S.color = '#ffffff'; S.shadow = 0; applyPreset('credit'); G = pick(S);
     S.text = DEFAULTS_TEXT; $('txt').value = DEFAULTS_TEXT;
     S.fmt = 'auto'; setSeg('segFmt', 'f', 'auto'); S.sizeSel = 'orig'; setSeg('segSize', 's', 'orig');
     S.audio = true; $('audio').checked = true; S.crop = true; $('stkCrop').checked = true;

@@ -1,6 +1,9 @@
 name: Daily Actions Storage Cleanup
 
 on:
+  push:
+    paths:
+      - ".github/workflows/cleanup-actions-storage.yml"
   schedule:
     - cron: "17 3 * * *"
   workflow_dispatch:

@@ -51,7 +51,7 @@ done < <(gh api --paginate "repos/$REPO/actions/runs?status=completed&per_page=1
 # 3) Do not touch caches while any workflow is active/queued.
 ACTIVE=0
 for status in in_progress queued waiting; do
-  count=$(gh api "repos/$REPO/actions/runs?status=$status&per_page=100" --jq '.total_count // 0' 2>/dev/null || echo 1)
+  count=$(gh api "repos/$REPO/actions/runs?status=$status&per_page=100" --jq "[.workflow_runs[] | select(.id != ${GITHUB_RUN_ID:-0})] | length" 2>/dev/null || echo 1)
   ACTIVE=$((ACTIVE + count))
 done
 

@@ -31,6 +31,9 @@ jobs:
         run: grep -q "android.intent.action.SEND" android/app/src/main/AndroidManifest.xml && grep -q ShareReceiverPlugin android/app/src/main/java/com/tjo7/stamp/MainActivity.java && echo 'share target OK'
       - name: Verify fixed signing key is wired in
         run: grep -q "signingConfigs.tjo7" android/app/build.gradle && grep -q GITHUB_RUN_NUMBER android/app/build.gradle && echo 'signing OK'
+      - name: Verify the in-app updater is wired in
+        run: grep -q UpdatePlugin android/app/src/main/java/com/tjo7/stamp/MainActivity.java && grep -q REQUEST_INSTALL_PACKAGES android/app/src/main/AndroidManifest.xml && grep -q "androidx.core.content.FileProvider" android/app/src/main/AndroidManifest.xml && grep -q cache-path android/app/src/main/res/xml/file_paths.xml && echo 'updater OK'
+
       - name: Sync web files
         run: npx cap sync android
       - name: Build debug APK
@@ -56,3 +59,18 @@ jobs:
             --notes "نزّل tjo7-stamp.apk وثبّته فوق النسخة القديمة." \
             --latest
           gh release list --limit 100 --json tagName --jq '.[5:][].tagName' | xargs -r -I{} gh release delete {} --cleanup-tag -y || true
+
+      - name: Publish to the public releases repo (read by the in-app updater)
+        env:
+          RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          if [ -z "$RELEASES_TOKEN" ]; then echo "RELEASES_TOKEN secret is missing - skipping the public release"; exit 0; fi
+          export GH_TOKEN="$RELEASES_TOKEN"
+          TAG="build-${{ github.run_number }}"
+          SIZE=$(stat -c%s tjo7-stamp.apk)
+          python3 scripts/make_latest.py "${{ github.run_number }}" "$SIZE" "$TAG" > latest.json
+          cat latest.json
+          gh release create "$TAG" tjo7-stamp.apk latest.json -R Deeper1deep/tjo7-stamp-releases \
+            --title "ختم t.jo7 - بناء ${{ github.run_number }}" \
+            --notes-file release-notes.txt --latest
+          gh release list -R Deeper1deep/tjo7-stamp-releases --limit 100 --json tagName --jq '.[5:][].tagName' | xargs -r -I{} gh release delete {} -R Deeper1deep/tjo7-stamp-releases --cleanup-tag -y || true

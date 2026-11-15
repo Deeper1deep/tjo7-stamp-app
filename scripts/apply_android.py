@@ -71,4 +71,22 @@ if "android.intent.action.SEND" not in m:
         sys.exit("ERROR: AndroidManifest.xml has no <activity>")
     m = m.replace("</activity>", filters + "        </activity>", 1)
     open(MF, "w", encoding="utf-8").write(m)
+
+# --- in-app updater: install permission + FileProvider paths for the downloaded APK ---
+m = open(MF, encoding="utf-8").read()
+if "REQUEST_INSTALL_PACKAGES" not in m:
+    m = m.replace("<application", '<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n    <application', 1)
+if "androidx.core.content.FileProvider" not in m:
+    prov = ('        <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider"'
+            ' android:exported="false" android:grantUriPermissions="true">\n'
+            '            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />\n'
+            '        </provider>\n')
+    m = m.replace("</application>", prov + "    </application>", 1)
+open(MF, "w", encoding="utf-8").write(m)
+XML = os.path.join(RES, "xml")
+os.makedirs(XML, exist_ok=True)
+with open(os.path.join(XML, "file_paths.xml"), "w", encoding="utf-8") as fh:
+    fh.write('<?xml version="1.0" encoding="utf-8"?>\n<paths xmlns:android="http://schemas.android.com/apk/res/android">\n'
+             '    <external-path name="my_images" path="." />\n    <cache-path name="my_cache_images" path="." />\n'
+             '    <files-path name="my_files" path="." />\n</paths>\n')
 print("icons, native plugin, fixed signing and share-target applied")

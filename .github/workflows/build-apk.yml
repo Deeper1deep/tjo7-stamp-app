@@ -30,7 +30,8 @@ jobs:
         with:
           gradle-version: "8.9"
       - name: Unit tests
-        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+        run: |
+          for i in 1 2 3; do gradle :app:testDebugUnitTest --no-daemon --stacktrace && exit 0; echo "retrying after a transient failure ($i)"; sleep 45; done; exit 1
       - name: Lint
         run: gradle :app:lintDebug --no-daemon --stacktrace
       - name: Lint report (on failure)

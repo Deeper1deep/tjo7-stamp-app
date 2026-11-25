@@ -1,9 +1,0 @@
-build/
-.gradle/
-*.apk
-*.aab
-local.properties
-.idea/
-*.iml
-signing/tjo7.keystore
-signing/tjo7.properties

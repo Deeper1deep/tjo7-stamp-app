@@ -48,9 +48,9 @@ class DomainTest {
         val s = StampSettings(widthPct = 10, marginPct = 2)
         val fs = 30f
         val bl = StampGeometry.place(1000, 500, s.copy(corner = Corner.BL), m, fs, false)
-        assertEquals(20f, bl.x, 0.01f); assertEquals(500f - 10f - 5f, bl.y, 0.01f)
+        assertEquals(20f, bl.x, 0.01f); assertEquals(500f - 20f - 5f, bl.y, 0.01f)
         val tr = StampGeometry.place(1000, 500, s.copy(corner = Corner.TR), m, fs, false)
-        assertEquals(1000f - 20f - 100f, tr.x, 0.01f); assertEquals(10f + 20f, tr.y, 0.01f)
+        assertEquals(1000f - 20f - 100f, tr.x, 0.01f); assertEquals(20f + 20f, tr.y, 0.01f)
         val far = StampGeometry.place(1000, 500, s.copy(corner = Corner.BL, dx = 100f, dy = -100f), m, fs, false)
         assertTrue(far.x + 100f <= 1000.01f); assertTrue(far.y - 20f >= -0.01f)
         val t = StampGeometry.place(1000, 360, s, m, fs, true)

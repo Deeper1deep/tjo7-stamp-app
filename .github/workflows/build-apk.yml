@@ -33,6 +33,9 @@ jobs:
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
       - name: Lint
         run: gradle :app:lintDebug --no-daemon --stacktrace
+      - name: Lint report (on failure)
+        if: failure()
+        run: cat app/build/reports/lint-results-debug.txt | head -300 || true
       - name: Build debug + release APKs (signed with the original key)
         run: gradle :app:assembleDebug :app:assembleRelease --no-daemon --stacktrace
       - name: Verify package, version and signing certificate

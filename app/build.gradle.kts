@@ -55,7 +55,6 @@ android {
         checkReleaseBuilds = false
         warningsAsErrors = false
         textReport = true
-        textOutput = file("stdout")
         disable += setOf("MissingTranslation", "ExtraTranslation", "GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
     }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }

@@ -83,7 +83,7 @@ class UpdateRepository(private val ctx: Context) {
         try {
             c.connectTimeout = 15_000; c.readTimeout = 30_000; c.instanceFollowRedirects = true
             if (c.responseCode != 200) throw UpdateException("HTTP " + c.responseCode)
-            val total = if (c.contentLengthLong > 0) c.contentLengthLong else info.size
+            val total = if (c.contentLength > 0) c.contentLength.toLong() else info.size
             val md = MessageDigest.getInstance("SHA-256")
             var done = 0L
             c.inputStream.use { i -> part.outputStream().use { o ->

@@ -104,5 +104,4 @@
     <string name="err_memory">الذاكرة مش كفاية. جرب حجم أصغر.</string>
     <string name="err_unsupported">نوع الملف ده مش مدعوم.</string>
     <string name="err_video">فشل معالجة الفيديو. جرب حجم أصغر أو صيغة تانية.</string>
-    <string name="perm_storage">محتاج إذن التخزين عشان أحفظ في المعرض.</string>
 </resources>

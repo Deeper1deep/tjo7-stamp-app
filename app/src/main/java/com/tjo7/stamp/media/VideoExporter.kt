@@ -33,8 +33,10 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 /** Hardware-accelerated H.264/AAC export with the credit composited by Media3 (audio is kept unless asked otherwise). */
+@androidx.annotation.OptIn(UnstableApi::class)
 class VideoExporter(private val ctx: Context, private val renderer: StampRenderer) {
 
+    @androidx.annotation.OptIn(UnstableApi::class)
     private class CreditOverlay(
         private val shown: Bitmap, private val hidden: Bitmap, private val mode: CreditMode,
     ) : BitmapOverlay() {

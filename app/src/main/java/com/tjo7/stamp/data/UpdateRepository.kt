@@ -123,6 +123,7 @@ class UpdateRepository(private val ctx: Context) {
 
     fun canInstall(): Boolean = Build.VERSION.SDK_INT < 26 || ctx.packageManager.canRequestPackageInstalls()
 
+    @android.annotation.SuppressLint("InlinedApi")
     fun permissionIntent(): Intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + ctx.packageName))
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 

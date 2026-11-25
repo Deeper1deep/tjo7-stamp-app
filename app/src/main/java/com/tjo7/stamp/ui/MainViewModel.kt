@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
+@android.annotation.SuppressLint("StaticFieldLeak") // holds the application context only
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val ctx = app.applicationContext
     private val repo = SettingsRepository(ctx)

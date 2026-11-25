@@ -8,6 +8,7 @@ import com.tjo7.stamp.domain.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.BufferedOutputStream
 import java.io.ByteArrayOutputStream

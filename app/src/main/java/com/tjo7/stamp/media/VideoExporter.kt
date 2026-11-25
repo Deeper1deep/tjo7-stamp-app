@@ -26,12 +26,8 @@ import com.tjo7.stamp.domain.CreditMode
 import com.tjo7.stamp.domain.StampSettings
 import com.tjo7.stamp.domain.creditVisibleAt
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.coroutineScope
 import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException

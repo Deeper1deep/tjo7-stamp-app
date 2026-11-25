@@ -29,6 +29,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
+          mkdir -p signing
           echo "$KEYSTORE_BASE64" | base64 -d > signing/tjo7.keystore
           printf 'storeFile=tjo7.keystore\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$KEYSTORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > signing/tjo7.properties
           chmod 600 signing/tjo7.keystore signing/tjo7.properties
@@ -110,6 +111,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
+          mkdir -p signing
           echo "$KEYSTORE_BASE64" | base64 -d > signing/tjo7.keystore
           printf 'storeFile=tjo7.keystore\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$KEYSTORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > signing/tjo7.properties
           chmod 600 signing/tjo7.keystore signing/tjo7.properties

@@ -77,7 +77,7 @@ class RendererInstrumentedTest {
         val b = Bitmap.createBitmap(200, 100, Bitmap.Config.ARGB_8888)
         for (y in 20 until 60) for (x in 50 until 150) b.setPixel(x, y, Color.RED)
         val box = StampRenderer.contentBox(b)!!
-        assertEquals(50, box[0], 2); assertEquals(20, box[1], 2); assertEquals(150, box[2], 2); assertEquals(60, box[3], 2)
+        assertEquals(50.0, box[0].toDouble(), 2.0); assertEquals(20.0, box[1].toDouble(), 2.0); assertEquals(150.0, box[2].toDouble(), 2.0); assertEquals(60.0, box[3].toDouble(), 2.0)
         assertNull(StampRenderer.contentBox(Bitmap.createBitmap(10, 10, Bitmap.Config.ARGB_8888)))
         assertTrue(StampRenderer.hasAlpha(b)); 
     }

@@ -2,76 +2,191 @@ name: Build APK
 
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish the signed APK to the public releases repo (read by the in-app updater)"
+        type: boolean
+        default: false
   push:
-    branches: [main, master]
+    branches: [main, master, migration/kotlin-native-offline]
+  pull_request:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      - name: Restore signing key from secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          mkdir -p signing
+          echo "$KEYSTORE_BASE64" | base64 -d > signing/tjo7.keystore
+          printf 'storeFile=tjo7.keystore\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$KEYSTORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > signing/tjo7.properties
+          chmod 600 signing/tjo7.keystore signing/tjo7.properties
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
-      - name: Install dependencies
-        run: npm install
-      - name: Create the Android project
-        run: npx cap add android
-      - name: Apply icons
-        run: python3 scripts/apply_android.py
-      - name: Verify native save plugin is in the project
-        run: grep -q SaveToDevicePlugin android/app/src/main/java/com/tjo7/stamp/MainActivity.java && echo 'native save plugin OK'
-      - name: Verify the share target is in the manifest
-        run: grep -q "android.intent.action.SEND" android/app/src/main/AndroidManifest.xml && grep -q ShareReceiverPlugin android/app/src/main/java/com/tjo7/stamp/MainActivity.java && echo 'share target OK'
-      - name: Verify fixed signing key is wired in
-        run: grep -q "signingConfigs.tjo7" android/app/build.gradle && grep -q GITHUB_RUN_NUMBER android/app/build.gradle && echo 'signing OK'
-      - name: Verify the in-app updater is wired in
-        run: grep -q UpdatePlugin android/app/src/main/java/com/tjo7/stamp/MainActivity.java && grep -q REQUEST_INSTALL_PACKAGES android/app/src/main/AndroidManifest.xml && grep -q "androidx.core.content.FileProvider" android/app/src/main/AndroidManifest.xml && grep -q cache-path android/app/src/main/res/xml/file_paths.xml && echo 'updater OK'
-
-      - name: Sync web files
-        run: npx cap sync android
-      - name: Build debug APK
-        working-directory: android
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
-          keytool -printcert -jarfile app/build/outputs/apk/debug/app-debug.apk | grep -i 'SHA256' | head -1
-      - name: Upload APK
-        continue-on-error: true  # the Actions artifact quota can be full; the release below is what matters
-        uses: actions/upload-artifact@v4
+      - uses: gradle/actions/setup-gradle@v4
         with:
-          name: tjo7-stamp-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 1
-      - name: Publish a release with a direct download link
+          gradle-version: "8.9"
+      - name: Unit tests
+        run: |
+          for i in 1 2 3; do gradle :app:testDebugUnitTest --no-daemon --stacktrace && exit 0; echo "retrying after a transient failure ($i)"; sleep 45; done; exit 1
+      - name: Lint
+        run: gradle :app:lintDebug --no-daemon --stacktrace
+      - name: Lint report (on failure)
+        if: failure()
+        run: cat app/build/reports/lint-results-debug.txt | head -300 || true
+      - name: Build debug + release APKs (signed with the original key)
+        run: gradle :app:assembleDebug :app:assembleRelease --no-daemon --stacktrace
+      - name: Verify package, version and signing certificate
+        env:
+          KSP: ${{ github.run_id }}
+        run: |
+          set -e
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          APK=app/build/outputs/apk/release/app-release.apk
+          echo "== badging"
+          "$BT/aapt2" dump badging "$APK" | grep -E "^package:" | sed -E "s/ platformBuildVersion.*//"
+          "$BT/aapt2" dump badging "$APK" | grep -q "name='com.tjo7.stamp'" 
+          echo "== apksigner verify"
+          "$BT/apksigner" verify --verbose "$APK" | head -4
+          APK_FP=$("$BT/apksigner" verify --print-certs "$APK" | grep -i "certificate SHA-256 digest" | head -1 | awk '{print $NF}')
+          # Fingerprint of the committed original keystore (password is read from the committed config, never printed)
+          export KS_PASS=$(grep '^storePassword=' signing/tjo7.properties | cut -d= -f2-)
+          echo "::add-mask::$KS_PASS"
+          KS_FP=$(keytool -list -v -keystore signing/tjo7.keystore -alias tjo7 -storepass:env KS_PASS | grep "SHA256:" | head -1 | awk '{print $NF}' | tr -d ':' | tr 'A-F' 'a-f')
+          echo "APK  signer SHA-256: $APK_FP"
+          echo "KEYSTORE   SHA-256: $KS_FP"
+          test "$APK_FP" = "$KS_FP"
+          echo "signing certificate matches the original keystore"
+      - name: Collect artifacts
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/release/app-release.apk dist/tjo7-stamp.apk
+          cp app/build/outputs/apk/debug/app-debug.apk dist/tjo7-stamp-debug.apk
+          python3 - <<'PY'
+          import glob, re, xml.etree.ElementTree as ET
+          t=f=e=s=0
+          for p in glob.glob("app/build/test-results/testDebugUnitTest/*.xml"):
+              r=ET.parse(p).getroot(); t+=int(r.get("tests"));f+=int(r.get("failures"));e+=int(r.get("errors"));s+=int(r.get("skipped"))
+          print(f"UNIT TESTS: total={t} failures={f} errors={e} skipped={s}")
+          PY
+      - uses: actions/upload-artifact@v4
+        continue-on-error: true   # the Actions artifact quota can be full; the release step is what matters
+        with:
+          name: apk-and-reports
+          path: |
+            dist/*.apk
+            app/build/reports/**
+            app/build/test-results/**
+          retention-days: 3
+      - name: Keep APK for later jobs
+        uses: actions/cache/save@v4
+        with:
+          path: dist
+          key: dist-${{ github.run_id }}-${{ github.run_attempt }}
+
+  instrumented:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore signing key from secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          mkdir -p signing
+          echo "$KEYSTORE_BASE64" | base64 -d > signing/tjo7.keystore
+          printf 'storeFile=tjo7.keystore\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$KEYSTORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > signing/tjo7.properties
+          chmod 600 signing/tjo7.keystore signing/tjo7.properties
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - uses: actions/cache/restore@v4
+        with:
+          path: dist
+          key: dist-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+      - name: Instrumented tests + install-over-the-old-app test on an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          arch: x86_64
+          target: google_apis
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: bash scripts/emulator_checks.sh
+      - name: Upload instrumented reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: instrumented-reports
+          path: app/build/reports/androidTests/**
+          retention-days: 3
+
+  publish:
+    needs: [build, instrumented]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && inputs.publish)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache/restore@v4
+        with:
+          path: dist
+          key: dist-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+      - name: Publish a release in this repo
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk tjo7-stamp.apk
-          gh release create "build-${{ github.run_number }}" tjo7-stamp.apk \
+          gh release create "build-${{ github.run_number }}" dist/tjo7-stamp.apk \
             --title "ختم t.jo7 - بناء ${{ github.run_number }}" \
-            --notes "نزّل tjo7-stamp.apk وثبّته فوق النسخة القديمة." \
-            --latest
+            --notes-file release-notes.txt --latest
           gh release list --limit 100 --json tagName --jq '.[5:][].tagName' | xargs -r -I{} gh release delete {} --cleanup-tag -y || true
-
       - name: Publish to the public releases repo (read by the in-app updater)
         env:
           RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
-          if [ -z "$RELEASES_TOKEN" ]; then echo "RELEASES_TOKEN secret is missing - skipping the public release"; exit 0; fi
+          if [ -z "$RELEASES_TOKEN" ]; then echo "RELEASES_TOKEN secret is missing"; exit 1; fi
           export GH_TOKEN="$RELEASES_TOKEN"
           TAG="build-${{ github.run_number }}"
-          SIZE=$(stat -c%s tjo7-stamp.apk)
-          python3 scripts/make_latest.py "${{ github.run_number }}" "$SIZE" "$TAG" > latest.json
-          cat latest.json
-          gh release create "$TAG" tjo7-stamp.apk latest.json -R Deeper1deep/tjo7-stamp-releases \
+          SIZE=$(stat -c%s dist/tjo7-stamp.apk)
+          python3 scripts/make_latest.py "${{ github.run_number }}" "$SIZE" "$TAG" dist/tjo7-stamp.apk > dist/latest.json
+          cat dist/latest.json
+          gh release create "$TAG" dist/tjo7-stamp.apk dist/latest.json -R Deeper1deep/tjo7-stamp-releases \
             --title "ختم t.jo7 - بناء ${{ github.run_number }}" \
             --notes-file release-notes.txt --latest
           gh release list -R Deeper1deep/tjo7-stamp-releases --limit 100 --json tagName --jq '.[5:][].tagName' | xargs -r -I{} gh release delete {} -R Deeper1deep/tjo7-stamp-releases --cleanup-tag -y || true
+      - name: Verify the public update feed
+        run: |
+          sleep 5
+          curl -fsSL https://github.com/Deeper1deep/tjo7-stamp-releases/releases/latest/download/latest.json | tee /tmp/l.json
+          python3 -c "import json;d=json.load(open('/tmp/l.json'));assert d['versionCode']==${{ github.run_number }};print('feed OK', d['versionCode'])"

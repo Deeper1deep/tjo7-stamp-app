@@ -114,7 +114,7 @@ class MediaEngine(private val ctx: Context, val renderer: StampRenderer) {
             val job = currentCoroutineContext()[Job]
             val fmt = resolveFormat(info, s)
             val box = if (s.sticker && !s.transparent) stickerBox(info) else null
-            val check = { job?.ensureActive() }
+            val check: () -> Unit = { job?.ensureActive() }
             try {
                 when {
                     fmt == OutFormat.MP4 && info.kind == MediaKind.VIDEO && !s.transparent -> {

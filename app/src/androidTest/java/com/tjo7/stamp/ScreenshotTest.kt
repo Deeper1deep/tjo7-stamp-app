@@ -19,13 +19,16 @@ class ScreenshotTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
 
     private fun shot(name: String) {
-        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(800)
         val dir = File(Support.target.getExternalFilesDir(null), "shots").apply { mkdirs() }
         val bmp = rule.onRoot().captureToImage().asAndroidBitmap()
         File(dir, "$name.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 
     @Test fun captureAllTabs() {
+        // The blink preview animates forever; freeze the test clock so it can be captured.
+        rule.mainClock.autoAdvance = false
+        rule.mainClock.advanceTimeBy(1000)
         for (round in listOf("dark", "light")) {
             for (t in listOf("editor", "credit", "output", "settings")) {
                 rule.onNodeWithTag("tab_$t").performClick()

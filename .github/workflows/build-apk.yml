@@ -132,12 +132,12 @@ jobs:
           key: dist-${{ github.run_id }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
       - name: Instrumented tests + install-over-the-old-app test on an emulator
+        timeout-minutes: 35
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 33
           arch: x86_64
           target: google_apis
-          profile: pixel_6
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true

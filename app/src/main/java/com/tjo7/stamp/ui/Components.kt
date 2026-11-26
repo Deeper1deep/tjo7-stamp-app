@@ -52,7 +52,7 @@ fun LabeledSlider(label: String, value: Int, range: IntRange, onChange: (Int) ->
 }
 
 @Composable
-fun <T> Segmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit) {
+fun <T> Segmented(options: List<Pair<T, String>>, selected: T, compact: Boolean = false, dot: ((T) -> androidx.compose.ui.graphics.Color)? = null, onSelect: (T) -> Unit) {
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(3.dp),
         horizontalArrangement = Arrangement.spacedBy(3.dp)) {
         for ((v, label) in options) {
@@ -60,10 +60,13 @@ fun <T> Segmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> 
             Box(Modifier.weight(1f).clip(RoundedCornerShape(10.dp))
                 .background(if (on) MaterialTheme.colorScheme.surface else androidx.compose.ui.graphics.Color.Transparent)
                 .then(if (on) Modifier.border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp)) else Modifier)
-                .clickable(role = Role.RadioButton) { onSelect(v) }.padding(vertical = 8.dp, horizontal = 4.dp),
+                .clickable(role = Role.RadioButton) { onSelect(v) }.padding(vertical = if (compact) 5.dp else 8.dp, horizontal = 4.dp),
                 contentAlignment = Alignment.Center) {
-                Text(label, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center, maxLines = 1,
+              Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (dot != null) Box(Modifier.size(11.dp).clip(androidx.compose.foundation.shape.CircleShape).background(dot(v)).border(1.dp, MaterialTheme.colorScheme.outline, androidx.compose.foundation.shape.CircleShape))
+                Text(label, style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center, maxLines = 1,
                     color = if (on) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
+              }
             }
         }
     }

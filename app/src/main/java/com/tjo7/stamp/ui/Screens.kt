@@ -377,11 +377,11 @@ fun CreditTab(st: UiState, vm: MainViewModel, onPick: () -> Unit) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             SubLabel(stringResource(R.string.sub_color))
-                            Segmented(listOf(true to stringResource(R.string.color_white), false to stringResource(R.string.color_black)), s.white) { v -> vm.edit { it.copy(white = v) } }
+                            Segmented(listOf(true to stringResource(R.string.color_white), false to stringResource(R.string.color_black)), s.white, compact = true, dot = { w -> if (w) Color.White else Color(0xFF111111) }) { v -> vm.edit { it.copy(white = v) } }
                         }
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             SubLabel(stringResource(R.string.sub_weight))
-                            Segmented(listOf(false to stringResource(R.string.weight_regular), true to stringResource(R.string.weight_bold)), s.bold) { v -> vm.edit { it.copy(bold = v) } }
+                            Segmented(listOf(false to stringResource(R.string.weight_regular), true to stringResource(R.string.weight_bold)), s.bold, compact = true) { v -> vm.edit { it.copy(bold = v) } }
                         }
                     }
                 }

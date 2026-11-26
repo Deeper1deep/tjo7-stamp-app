@@ -132,4 +132,39 @@ class MediaEngineInstrumentedTest {
             assertTrue(job.isCancelled)
         }
     }
+
+    private fun checkVideo(o: ExportOutput, mime: String, minMs: Long, maxMs: Long) {
+        assertTrue("size ${o.size}", o.size > 2_000)
+        val r = MediaMetadataRetriever(); r.setDataSource(o.file.absolutePath)
+        assertEquals(mime, r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE))
+        val dur = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)!!.toLong()
+        assertTrue("duration $dur not in $minMs..$maxMs", dur in minMs..maxMs)
+        val f = r.getFrameAtTime(500_000, MediaMetadataRetriever.OPTION_CLOSEST)
+        assertNotNull("frame decodes", f)
+        var sum = 0L; for (y in 0 until f!!.height step 7) for (x in 0 until f.width step 7) sum += f.getPixel(x, y) and 255
+        assertTrue("frame has picture", sum > 0)
+    }
+
+    @Test fun videoExportsWebm() {
+        val info = Support.probe(Support.asset("sample.mp4"))
+        val o = export(info, StampSettings(format = OutFormat.WEBM))
+        assertEquals(OutFormat.WEBM, o.format); assertEquals("webm", o.file.extension)
+        checkVideo(o, "video/webm", info.durationMs - 900, info.durationMs + 900)
+    }
+
+    @Test fun imageExportsMp4AndWebmAsThreeSecondClips() {
+        val info = Support.probe(Support.asset("sample.png"))
+        val m = export(info, StampSettings(format = OutFormat.MP4)); assertEquals(OutFormat.MP4, m.format)
+        checkVideo(m, "video/mp4", 2500, 3600)
+        val w = export(info, StampSettings(format = OutFormat.WEBM, mode = CreditMode.BLINK)); assertEquals(OutFormat.WEBM, w.format)
+        checkVideo(w, "video/webm", 2500, 3600)
+    }
+
+    @Test fun gifExportsMp4AndWebmKeepingMotion() {
+        val info = Support.probe(Support.asset("sample.gif"))
+        val m = export(info, StampSettings(format = OutFormat.MP4)); assertEquals(OutFormat.MP4, m.format)
+        checkVideo(m, "video/mp4", minOf(500L, info.durationMs / 2), info.durationMs + 1500)
+        val w = export(info, StampSettings(format = OutFormat.WEBM)); assertEquals(OutFormat.WEBM, w.format)
+        checkVideo(w, "video/webm", minOf(500L, info.durationMs / 2), info.durationMs + 1500)
+    }
 }

@@ -4,7 +4,7 @@ set -euo pipefail
 PKG=com.tjo7.stamp
 NEW=dist/tjo7-stamp.apk
 echo "== instrumented tests"
-ok=0; for i in 1 2; do gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace && ok=1 && break; sleep 30; done; [ "$ok" = 1 ] || { echo "INSTRUMENTED TESTS FAILED"; adb logcat -d | tail -150; exit 1; }
+ok=0; for i in 1 2; do gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace && ok=1 && break; sleep 30; done; [ "$ok" = 1 ] || { echo "INSTRUMENTED TESTS FAILED"; mkdir -p dist/shots; adb pull /data/local/tmp/shots/. dist/shots/ >/dev/null 2>&1 || true; adb logcat -d | tail -150; exit 1; }
 
 echo "== screenshots"
 mkdir -p dist/shots

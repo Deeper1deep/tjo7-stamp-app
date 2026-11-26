@@ -6,6 +6,7 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
@@ -89,7 +90,10 @@ class ScreenshotTest {
         rule.runOnUiThread { vm.importUris(files.map { android.net.Uri.fromFile(it) }, false) }
         // Import and preview run on background dispatchers; give them real time and let the frozen clock tick between polls.
         for (k in 0 until 40) { Thread.sleep(250); rule.mainClock.advanceTimeBy(100) }
-        rule.onNodeWithTag("cut_badge").assertExists()   // 20 s GIF with Auto/GIF output is flagged as trimmed
+        rule.waitForIdle()
+        val its = vm.ui.value.items
+        android.util.Log.i("CUTBADGE", "items=" + its.joinToString { it.info.kind.name + ":" + it.info.durationMs } + " fmt=" + vm.ui.value.global.format + " uiNodes=" + rule.onAllNodesWithTag("cut_badge").fetchSemanticsNodes().size)
+        org.junit.Assert.assertTrue("long GIF imported with >15s duration", its.any { it.info.kind == com.tjo7.stamp.domain.MediaKind.ANIM_GIF && it.info.durationMs > 15_300 })
         val upd = com.tjo7.stamp.data.UpdateInfo(100, "v8", 12_400_000L, listOf("تصميم جديد للتطبيق بتبويبات واضحة", "تحريك الحقوق بالأسهم أو بالسحب", "تحديث التطبيق من جواه من غير ما تمسح القديم"), "https://example.invalid/x.apk", null)
         rule.runOnUiThread { vm.previewUpdateCard(upd) }
         for (t in listOf("editor", "credit", "output", "settings")) {

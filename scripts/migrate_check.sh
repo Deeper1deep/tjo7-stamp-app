@@ -79,7 +79,18 @@ python3 /tmp/ui.py has_text "@migr8test" || echo "MIGRATION: could not type in t
 sleep 4
 echo "MIGRATION: old app localStorage on disk before the update:"
 adb root >/dev/null 2>&1 || true; sleep 3
-adb shell 'cat /data/data/com.tjo7.stamp/app_webview/Default/Local\ Storage/leveldb/* 2>/dev/null' | strings | grep -E "tjo7\.(settings|theme)" | tail -4 | cut -c1-500 || true
+adb shell 'cat /data/data/com.tjo7.stamp/app_webview/Default/Local\ Storage/leveldb/* 2>/dev/null' > /tmp/ls_dump.bin || true
+python3 - <<'PY' || true
+import re
+b = open('/tmp/ls_dump.bin','rb').read()
+print("ls bytes:", len(b))
+for enc, pat in (("latin1", rb'\{"g":\{[^}]*\}[^\x00]{0,200}'), ("utf16", None)):
+    if pat:
+        for m in re.findall(pat, b)[-3:]: print("LS", enc, m.decode('latin1')[:400])
+    else:
+        t = b.decode('utf-16-le', 'ignore')
+        for m in re.findall(r'\{"g":\{[^}]*\}.{0,200}', t)[-3:]: print("LS", enc, m[:400])
+PY
 adb shell am force-stop $PKG; sleep 2
 adb install -r "$NEW" || { echo "MIGRATION: FAIL (install over)"; exit 0; }
 for try in 1 2 3; do

@@ -61,23 +61,30 @@ adb shell screencap -p /sdcard/old_launch.png; adb pull /sdcard/old_launch.png d
 echo "--- old app state"; adb shell dumpsys activity activities | grep -m3 -E "mResumedActivity|topResumedActivity" ; adb logcat -d | grep -E "FATAL|AndroidRuntime|chromium.*ERROR|Process .* died" | tail -8
 echo "--- old app visible nodes"; python3 /tmp/ui.py list | head -40
 python3 /tmp/ui.py tap_text "بعدين" || true; sleep 2
+# Order matters: pick colour and format first (no soft keyboard on screen), type the text last.
 python3 /tmp/ui.py tap_text "الحقوق" ; sleep 2
+python3 /tmp/ui.py tap_text "أسود" || echo "MIGRATION: could not tap black in the old app"; sleep 1
+python3 /tmp/ui.py tap_text "الإخراج" ; sleep 2
+python3 /tmp/ui.py tap_text "GIF" prefix || echo "MIGRATION: could not tap GIF in the old app"; sleep 2
+adb shell screencap -p /sdcard/old_out.png; adb pull /sdcard/old_out.png dist/shots/mig_old_3_output.png >/dev/null 2>&1
+python3 /tmp/ui.py tap_text "الحقوق" ; sleep 2
+adb shell screencap -p /sdcard/old_edit0.png; adb pull /sdcard/old_edit0.png dist/shots/mig_old_2_black.png >/dev/null 2>&1
 python3 /tmp/ui.py edit; sleep 1
 adb shell input keyevent KEYCODE_MOVE_END
 for i in $(seq 1 40); do adb shell input keyevent KEYCODE_DEL; done
 adb shell input text '@migr8test'
 sleep 1
-python3 /tmp/ui.py tap_text "أسود" || true; sleep 1
 adb shell screencap -p /sdcard/old_edit.png; adb pull /sdcard/old_edit.png dist/shots/mig_old_2_edited.png >/dev/null 2>&1
 python3 /tmp/ui.py has_text "@migr8test" || echo "MIGRATION: could not type in the old app"
-python3 /tmp/ui.py tap_text "الإخراج" ; sleep 2
-python3 /tmp/ui.py tap_text "GIF" prefix ; sleep 2
-adb shell screencap -p /sdcard/old_out.png; adb pull /sdcard/old_out.png dist/shots/mig_old_3_output.png >/dev/null 2>&1
 sleep 4
 adb shell am force-stop $PKG; sleep 2
 adb install -r "$NEW" || { echo "MIGRATION: FAIL (install over)"; exit 0; }
-adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null
-sleep 12
+for try in 1 2 3; do
+  adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null
+  sleep 12
+  adb shell dumpsys activity activities | grep -E "topResumedActivity|mResumedActivity" | grep -q "$PKG" && break
+  echo "MIGRATION: new app not in foreground after launch try $try"
+done
 echo "MIGRATION: crash buffer after first launch of the new app:"; adb logcat -b crash -d 2>&1 | grep -v "^---" | tail -30 | cut -c1-220
 adb logcat -d 2>&1 | grep -E "AndroidRuntime|FATAL|com.tjo7.stamp.*(Exception|Error)" | tail -15 | cut -c1-260
 adb shell screencap -p /sdcard/new_launch.png; adb pull /sdcard/new_launch.png dist/shots/mig_new_1_launch.png >/dev/null 2>&1

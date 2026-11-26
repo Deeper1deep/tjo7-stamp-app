@@ -204,5 +204,8 @@ class MediaEngineInstrumentedTest {
         assertTrue(o.size > 1500)
         val r = MediaMetadataRetriever(); r.setDataSource(o.file.absolutePath)
         assertEquals("video/webm", r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE))
+        // dump the real engine output so CI can validate its alpha with ffprobe/Chrome
+        val b64 = android.util.Base64.encodeToString(o.file.readBytes(), android.util.Base64.NO_WRAP)
+        b64.chunked(2000).forEachIndexed { i, c -> android.util.Log.i("EXPORTB64", "%05d %s".format(i, c)) }
     }
 }

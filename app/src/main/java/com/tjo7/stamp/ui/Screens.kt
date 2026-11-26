@@ -2,6 +2,7 @@ package com.tjo7.stamp.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
@@ -197,9 +198,10 @@ fun EditorTab(st: UiState, vm: MainViewModel, onPick: () -> Unit, onExport: (Boo
         Transport(st, clock)
         if (st.items.isNotEmpty()) FilmStrip(st, vm, onPick)
         Section("") {
+            val cur = st.currentItem
             val note = when {
-                st.currentItem == null -> stringResource(R.string.per_note_none)
-                st.hasOverride -> stringResource(R.string.per_note_ov, st.currentItem.info.name)
+                cur == null -> stringResource(R.string.per_note_none)
+                st.hasOverride -> stringResource(R.string.per_note_ov, cur.info.name)
                 else -> stringResource(R.string.per_note_glob)
             }
             CheckRow(stringResource(R.string.per_card), note, st.hasOverride, enabled = st.currentItem != null, tag = "per_file") { vm.toggleOverride() }

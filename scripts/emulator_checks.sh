@@ -11,6 +11,8 @@ adb uninstall $PKG >/dev/null 2>&1 || true
 echo "== instrumented tests"
 ok=0; for i in 1 2; do gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace && ok=1 && break; sleep 30; done; [ "$ok" = 1 ] || { echo "INSTRUMENTED TESTS FAILED"; mkdir -p dist/shots; adb pull /data/local/tmp/shots/. dist/shots/ >/dev/null 2>&1 || true; adb logcat -d | tail -150; exit 1; }
 
+adb logcat -d -s ALPHAB64:I | grep ALPHAB64 | sed -E "s/^.*ALPHAB64 *: *//" | sort -n | awk '{printf "%s",$2}' | base64 -d > dist/shots/alpha_sample.webm 2>/dev/null || true
+ls -l dist/shots/alpha_sample.webm || true
 echo "== screenshots"
 mkdir -p dist/shots
 adb pull /data/local/tmp/shots/. dist/shots/ >/dev/null 2>&1 || echo "no screenshots pulled"

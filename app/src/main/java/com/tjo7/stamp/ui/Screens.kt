@@ -57,13 +57,13 @@ private fun rememberLoopClock(active: Boolean): State<Float> {
 fun Stage(st: UiState, vm: MainViewModel, clock: State<Float>, compact: Boolean, onPick: () -> Unit) {
     val cs = MaterialTheme.colorScheme
     val screenH = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp
-    val maxH = (screenH * (if (compact) 0.24f else 0.46f)).dp
+    val maxH = (screenH * (if (compact) 0.24f else 0.29f)).dp
     val stageBg = Color(0xFF05060D)
     val on = st.preview
     val showOn = st.editing.mode != CreditMode.BLINK || creditVisibleAt(CreditMode.BLINK, clock.value.toDouble())
     val bmp = if (showOn) on else (st.previewOff ?: on)
     val empty = st.items.isEmpty()
-    Box(Modifier.fillMaxWidth().heightIn(min = if (compact) 0.dp else 260.dp).clip(RoundedCornerShape(if (compact) 22.dp else 24.dp)).background(stageBg)
+    Box(Modifier.fillMaxWidth().heightIn(min = if (compact) 0.dp else 200.dp).clip(RoundedCornerShape(if (compact) 22.dp else 24.dp)).background(stageBg)
         .padding(if (compact) 8.dp else 10.dp), contentAlignment = Alignment.Center) {
         if (bmp != null) {
             BoxWithConstraints(Modifier.fillMaxWidth().heightIn(max = maxH), contentAlignment = Alignment.Center) {
@@ -281,12 +281,12 @@ fun EditorTab(st: UiState, vm: MainViewModel, onPick: () -> Unit, onExport: (Boo
 fun ResultsSheet(st: UiState, vm: MainViewModel, onShare: (List<ResultEntry>) -> Unit) {
     if (!st.resultsSheet || st.results.isEmpty()) return
     val cs = MaterialTheme.colorScheme
-    ModalBottomSheet(onDismissRequest = vm::closeResults, containerColor = cs.surface) {
+    ModalBottomSheet(onDismissRequest = vm::closeResults, containerColor = cs.surface, sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         val good = st.results.filter { it.output != null }
-        Column(Modifier.fillMaxWidth().padding(horizontal = Pad).padding(bottom = 22.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = Pad).padding(bottom = 18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.results_title), style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.results_title), style = MaterialTheme.typography.titleMedium, fontSize = 16.sp)
                     Text(stringResource(R.string.results_done, st.results.size), fontSize = 11.sp, color = cs.onSurfaceVariant)
                 }
                 Box(Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(cs.surfaceVariant).border(1.dp, cs.outline, RoundedCornerShape(13.dp))
@@ -295,9 +295,9 @@ fun ResultsSheet(st: UiState, vm: MainViewModel, onShare: (List<ResultEntry>) ->
             if (st.results.any { it.savedTo != null }) {
                 Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Tokens.Ok.copy(alpha = 0.10f)).border(1.5.dp, Tokens.Ok.copy(alpha = 0.6f), RoundedCornerShape(16.dp)).padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(Modifier.size(34.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Tokens.Ok), contentAlignment = Alignment.Center) { Icon(Icons.Default.Check, null, tint = Color(0xFF06281A)) }
+                    Box(Modifier.size(30.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Tokens.Ok), contentAlignment = Alignment.Center) { Icon(Icons.Default.Check, null, tint = Color(0xFF06281A)) }
                     Column {
-                        Text(stringResource(R.string.results_saved), style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.results_saved), style = MaterialTheme.typography.titleMedium, fontSize = 13.sp)
                         Text(stringResource(R.string.results_saved_sub), fontSize = 11.sp, color = cs.onSurfaceVariant)
                     }
                 }
@@ -308,12 +308,12 @@ fun ResultsSheet(st: UiState, vm: MainViewModel, onShare: (List<ResultEntry>) ->
                     val o = r.output
                     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(cs.surfaceVariant.copy(alpha = 0.6f)).border(1.dp, cs.outline, RoundedCornerShape(16.dp)).padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(Modifier.size(54.dp).clip(RoundedCornerShape(12.dp)).background(cs.surface)) {
+                        Box(Modifier.size(46.dp).clip(RoundedCornerShape(11.dp)).background(cs.surface)) {
                             src?.thumb?.let { b -> Image(b.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
                         }
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
-                                Text(r.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
+                                Text(r.name, style = MaterialTheme.typography.titleMedium, fontSize = 13.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
                             }
                             if (o != null) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Text(fmtBytes(o.size), fontSize = 11.sp, color = cs.onSurfaceVariant)

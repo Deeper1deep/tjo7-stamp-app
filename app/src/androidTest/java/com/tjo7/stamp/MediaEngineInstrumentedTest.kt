@@ -189,7 +189,8 @@ class MediaEngineInstrumentedTest {
         val dur = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)!!.toLong()
         assertTrue("duration $dur", dur in 2000..4000)
         assertNotNull(r.getFrameAtTime(1_000_000, MediaMetadataRetriever.OPTION_CLOSEST))
-        // keep a copy where CI can pull it for an outside check
+        // keep a copy where CI can pull it for an outside check (also dumped to logcat as base64)
+        run { val b64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP); b64.chunked(2000).forEachIndexed { i, c -> android.util.Log.i("ALPHAB64", "%04d %s".format(i, c)) } }
         val ua = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
         ua.executeShellCommand("mkdir -p /data/local/tmp/shots").close()
         val pfd = ua.executeShellCommand("cp " + f.absolutePath + " /data/local/tmp/shots/alpha_sample.webm")

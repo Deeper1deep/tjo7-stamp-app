@@ -13,6 +13,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 
+private object ParcelReader {
+    fun drain(fd: android.os.ParcelFileDescriptor) { android.os.ParcelFileDescriptor.AutoCloseInputStream(fd).use { it.readBytes() } }
+}
+
 /** Saves one PNG per tab and theme so the new UI can be compared with the old one. Not an assertion test. */
 @RunWith(AndroidJUnit4::class)
 class ScreenshotTest {
@@ -23,6 +27,10 @@ class ScreenshotTest {
         val dir = File(Support.target.getExternalFilesDir(null), "shots").apply { mkdirs() }
         val bmp = rule.onRoot().captureToImage().asAndroidBitmap()
         File(dir, "$name.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        // The app (and its files) is uninstalled when the test task ends, so also keep a copy where CI can pull it.
+        val ua = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
+        ua.executeShellCommand("mkdir -p /data/local/tmp/shots").close()
+        ParcelReader.drain(ua.executeShellCommand("screencap -p /data/local/tmp/shots/$name.png"))
     }
 
     @Test fun captureAllTabs() {

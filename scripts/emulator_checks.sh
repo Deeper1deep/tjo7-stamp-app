@@ -8,7 +8,7 @@ ok=0; for i in 1 2; do gradle :app:connectedDebugAndroidTest --no-daemon --stack
 
 echo "== screenshots"
 mkdir -p dist/shots
-adb pull /sdcard/Android/data/com.tjo7.stamp/files/shots/. dist/shots/ >/dev/null 2>&1 || echo "no screenshots pulled"
+adb pull /data/local/tmp/shots/. dist/shots/ >/dev/null 2>&1 || echo "no screenshots pulled"
 ls dist/shots || true
 
 echo "== install-over test"

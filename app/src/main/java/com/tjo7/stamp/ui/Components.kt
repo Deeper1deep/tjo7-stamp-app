@@ -334,7 +334,7 @@ fun OldToggle(on: Boolean, enabled: Boolean = true) {
     val cs = MaterialTheme.colorScheme
     androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
         Box(Modifier.width(42.dp).height(24.dp).clip(androidx.compose.foundation.shape.CircleShape)
-            .background(if (on) BtnBlue else cs.surfaceVariant).border(1.dp, if (on) BtnBlue else cs.outline, androidx.compose.foundation.shape.CircleShape)
+            .background(if (on) BtnBlue else androidx.compose.ui.graphics.Color(0xFF3A3F55)).border(1.dp, if (on) BtnBlue else androidx.compose.ui.graphics.Color(0xFF4A5070), androidx.compose.foundation.shape.CircleShape)
             .then(if (enabled) Modifier else Modifier.alpha(0.5f))) {
             Box(Modifier.align(if (on) Alignment.CenterEnd else Alignment.CenterStart).padding(3.dp).size(18.dp).clip(androidx.compose.foundation.shape.CircleShape)
                 .background(androidx.compose.ui.graphics.Color.White))
@@ -353,8 +353,8 @@ fun ThinSlider(value: Float, onValueChange: (Float) -> Unit, min: Float = 0f, ma
         .pointerInput(min, max) { detectTapGestures { o -> set.value(min + (o.x / wPx).coerceIn(0f, 1f) * (max - min)) } }
         .pointerInput(min, max) { detectHorizontalDragGestures { ch, _ -> ch.consume(); set.value(min + (ch.position.x / wPx).coerceIn(0f, 1f) * (max - min)) } },
         contentAlignment = Alignment.CenterStart) {
-        Box(Modifier.fillMaxWidth().height(4.dp).clip(androidx.compose.foundation.shape.CircleShape).background(cs.surfaceVariant))
-        Box(Modifier.fillMaxWidth(frac).height(4.dp).clip(androidx.compose.foundation.shape.CircleShape).background(cs.primary))
+        Box(Modifier.fillMaxWidth().height(5.dp).clip(androidx.compose.foundation.shape.CircleShape).background(cs.primary.copy(alpha = 0.35f)))
+        Box(Modifier.fillMaxWidth(frac).height(5.dp).clip(androidx.compose.foundation.shape.CircleShape).background(cs.primary))
         val d = androidx.compose.ui.platform.LocalDensity.current
         Box(Modifier.offset(x = with(d) { (frac * (wPx - 16.dp.toPx())).toDp() }).size(16.dp).clip(androidx.compose.foundation.shape.CircleShape)
             .background(androidx.compose.ui.graphics.Color.White))

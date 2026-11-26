@@ -57,7 +57,7 @@ private fun rememberLoopClock(active: Boolean): State<Float> {
 fun Stage(st: UiState, vm: MainViewModel, clock: State<Float>, compact: Boolean, onPick: () -> Unit) {
     val cs = MaterialTheme.colorScheme
     val screenH = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp
-    val maxH = (screenH * (if (compact) 0.24f else 0.34f)).dp
+    val maxH = (screenH * (if (compact) 0.18f else 0.34f)).dp
     val stageBg = Color(0xFF05060D)
     val on = st.preview
     val showOn = st.editing.mode != CreditMode.BLINK || creditVisibleAt(CreditMode.BLINK, clock.value.toDouble())
@@ -244,7 +244,7 @@ fun EditorTab(st: UiState, vm: MainViewModel, onPick: () -> Unit, onExport: (Boo
     val isVideo = st.currentItem?.info?.kind == MediaKind.VIDEO && !st.global.transparent
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Pad), verticalArrangement = Arrangement.spacedBy(Gap)) {
         if (isVideo) {
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(cs.surface).border(1.dp, cs.outline, RoundedCornerShape(24.dp)).padding(8.dp),
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(Color(0xFF05060D)).border(1.dp, cs.outline.copy(alpha = 0.6f), RoundedCornerShape(24.dp)).padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Stage(st, vm, clock, false, onPick)
                 SeekTransport(st, vm)

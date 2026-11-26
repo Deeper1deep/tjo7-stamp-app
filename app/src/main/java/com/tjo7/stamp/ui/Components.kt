@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -155,7 +156,7 @@ fun AppHeader(dark: Boolean, onToggleTheme: () -> Unit) {
             }
         }
         Box(Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(cs.surface)
-            .border(1.dp, cs.outline, RoundedCornerShape(14.dp)).clickable(onClick = onToggleTheme), contentAlignment = Alignment.Center) {
+            .border(1.dp, cs.outline, RoundedCornerShape(14.dp)).testTag("theme_toggle").clickable(onClick = onToggleTheme), contentAlignment = Alignment.Center) {
             Text(if (dark) "☀" else "☾", style = MaterialTheme.typography.titleMedium)
         }
     }

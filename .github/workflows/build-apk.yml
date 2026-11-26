@@ -141,6 +141,14 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: bash scripts/emulator_checks.sh
+      - name: Upload UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: ui-screenshots
+          path: dist/shots/**
+          retention-days: 3
       - name: Upload instrumented reports
         if: always()
         uses: actions/upload-artifact@v4

@@ -6,6 +6,11 @@ NEW=dist/tjo7-stamp.apk
 echo "== instrumented tests"
 ok=0; for i in 1 2; do gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace && ok=1 && break; sleep 30; done; [ "$ok" = 1 ] || { echo "INSTRUMENTED TESTS FAILED"; adb logcat -d | tail -150; exit 1; }
 
+echo "== screenshots"
+mkdir -p dist/shots
+adb pull /sdcard/Android/data/com.tjo7.stamp/files/shots/. dist/shots/ >/dev/null 2>&1 || echo "no screenshots pulled"
+ls dist/shots || true
+
 echo "== install-over test"
 OLD=/tmp/old-release.apk
 OLD_URL=$(curl -fsSL https://api.github.com/repos/Deeper1deep/tjo7-stamp-releases/releases/latest | python3 -c "import json,sys;d=json.load(sys.stdin);print([a['browser_download_url'] for a in d['assets'] if a['name'].endswith('.apk')][0])") || OLD_URL=""

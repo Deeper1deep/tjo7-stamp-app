@@ -86,7 +86,7 @@ fun Stage(st: UiState, vm: MainViewModel, clock: State<Float>, compact: Boolean,
                 modifier = Modifier.align(Alignment.TopStart).padding(2.dp).background(Color(0xCC2A47E8), RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 3.dp))
         } else if (it0 != null && !st.global.transparent && !compact) {
             val i = it0.info
-            Text(i.width.toString() + "×" + i.height + " · " + fmtBytes(i.sizeBytes) + if (i.durationMs > 0) " · " + fmtClock(i.durationMs / 1000.0) else "",
+            Text("\u2066" + i.width + "×" + i.height + "\u2069 · " + fmtBytes(i.sizeBytes) + if (i.durationMs > 0) " · " + (i.durationMs / 1000).let { sec -> (sec / 60).toString() + ":" + (sec % 60).toString().padStart(2, '0') } else "",
                 color = Color.White, fontSize = 11.5.sp, modifier = Modifier.align(Alignment.TopStart).padding(4.dp)
                     .background(Color(0x8C000000), RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 4.dp))
         }

@@ -3,7 +3,7 @@
 set -euo pipefail
 PKG=com.tjo7.stamp
 NEW=dist/tjo7-stamp.apk
-adb shell wm size 1080x2400; adb shell wm density 420; sleep 2
+adb shell wm size 1080x2340; adb shell wm density 420; sleep 2; echo "display: $(adb shell wm size | tr '\n' ' ') $(adb shell wm density | tr '\n' ' ')"
 echo "== migration check (build-26 settings -> new app)"
 bash scripts/migrate_check.sh "$NEW" || true
 mkdir -p dist/shots; adb pull /data/local/tmp/shots/. dist/shots/ >/dev/null 2>&1 || true

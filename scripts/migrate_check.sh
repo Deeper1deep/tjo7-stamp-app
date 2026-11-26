@@ -43,10 +43,12 @@ if cmd=='has_text':
     print('NOT FOUND',sys.argv[2]); sys.exit(1)
 if cmd=='edit':
     for _ in range(12):
-        t=find(lambda t: 'EditText' in t[2])
+        t=find(lambda t: 'EditText' in t[2] or t[0]=='@t.jo7' or t[1]=='@t.jo7')
         if t: tap(t); print('edit tapped, current=',t[0]); sys.exit(0)
         time.sleep(1)
-    print('NO EDITTEXT'); sys.exit(1)
+    print('NO EDITTEXT; nodes:')
+    for t in nodes(): print('  ',repr(t[0])[:30],repr(t[1])[:30],t[2].split('.')[-1],t[4])
+    sys.exit(1)
 if cmd=='list':
     for t in nodes():
         if t[0] or t[1]: print(repr(t[0])[:40],repr(t[1])[:40],t[2].split('.')[-1])
@@ -64,7 +66,6 @@ adb shell input keyevent KEYCODE_MOVE_END
 for i in $(seq 1 40); do adb shell input keyevent KEYCODE_DEL; done
 adb shell input text '@migr8test'
 sleep 1
-adb shell input keyevent KEYCODE_BACK 2>/dev/null; sleep 1
 adb shell screencap -p /sdcard/old_edit.png; adb pull /sdcard/old_edit.png dist/shots/mig_old_2_edited.png >/dev/null 2>&1
 python3 /tmp/ui.py has_text "@migr8test" || echo "MIGRATION: could not type in the old app"
 python3 /tmp/ui.py tap_text "الإخراج" ; sleep 2

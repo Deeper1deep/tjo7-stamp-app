@@ -114,7 +114,7 @@ fun FormatChip(title: String, sub: String, on: Boolean, modifier: Modifier = Mod
     Column(modifier.clip(RoundedCornerShape(14.dp))
         .background(if (on) cs.primaryContainer else androidx.compose.ui.graphics.Color.Transparent)
         .border(1.5.dp, if (on) cs.primary else cs.outline, RoundedCornerShape(14.dp))
-        .clickable(role = Role.RadioButton, onClick = onClick).padding(vertical = 8.dp, horizontal = 6.dp),
+        .clickable(role = Role.RadioButton, onClick = onClick).padding(vertical = 6.dp, horizontal = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally) {
         Text(title, style = MaterialTheme.typography.titleMedium, color = if (on) cs.primary else cs.onSurface)
         Text(sub, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
@@ -191,7 +191,7 @@ fun SaveBar(title: String, sub: String, label: String, enabled: Boolean, busy: B
 @Composable
 fun TabTitle(title: String, sub: String? = null, action: (@Composable () -> Unit)? = null) {
     val cs = MaterialTheme.colorScheme
-    Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp).padding(top = 14.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp).padding(top = 6.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleLarge)
             if (sub != null) Text(sub, fontSize = 11.sp, color = cs.onSurfaceVariant)

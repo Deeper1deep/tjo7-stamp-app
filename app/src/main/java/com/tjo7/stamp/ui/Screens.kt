@@ -57,7 +57,7 @@ private fun rememberLoopClock(active: Boolean): State<Float> {
 fun Stage(st: UiState, vm: MainViewModel, clock: State<Float>, compact: Boolean, onPick: () -> Unit) {
     val cs = MaterialTheme.colorScheme
     val screenH = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp
-    val maxH = (screenH * (if (compact) 0.24f else 0.29f)).dp
+    val maxH = (screenH * (if (compact) 0.24f else 0.34f)).dp
     val stageBg = Color(0xFF05060D)
     val on = st.preview
     val showOn = st.editing.mode != CreditMode.BLINK || creditVisibleAt(CreditMode.BLINK, clock.value.toDouble())

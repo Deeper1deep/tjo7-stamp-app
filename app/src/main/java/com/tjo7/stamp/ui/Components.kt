@@ -328,16 +328,16 @@ fun OldListRow(title: String, sub: String, onClick: () -> Unit) {
 }
 
 
-/** On/off switch drawn like the old app's: blue track + white knob at the end when on, dark track + white knob at the start when off. No animation. */
+/** On/off switch drawn like the old app's: blue track + white knob at the end when on, grey track + white knob at the start when off. No animation. */
 @Composable
 fun OldToggle(on: Boolean, enabled: Boolean = true) {
-    val cs = MaterialTheme.colorScheme
+    val track = if (on) BtnBlue else androidx.compose.ui.graphics.Color(0xFF3A3F55)
+    val edge = if (on) BtnBlue else androidx.compose.ui.graphics.Color(0xFF5A6080)
     androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
-        Box(Modifier.width(42.dp).height(24.dp).clip(androidx.compose.foundation.shape.CircleShape)
-            .background(if (on) BtnBlue else androidx.compose.ui.graphics.Color(0xFF3A3F55)).border(1.dp, if (on) BtnBlue else androidx.compose.ui.graphics.Color(0xFF4A5070), androidx.compose.foundation.shape.CircleShape)
-            .then(if (enabled) Modifier else Modifier.alpha(0.5f))) {
-            Box(Modifier.align(if (on) Alignment.CenterEnd else Alignment.CenterStart).padding(3.dp).size(18.dp).clip(androidx.compose.foundation.shape.CircleShape)
-                .background(androidx.compose.ui.graphics.Color.White))
+        Box(Modifier.size(width = 44.dp, height = 26.dp).alpha(if (enabled) 1f else 0.6f)) {
+            Box(Modifier.matchParentSize().background(track, androidx.compose.foundation.shape.CircleShape).border(1.dp, edge, androidx.compose.foundation.shape.CircleShape))
+            Box(Modifier.align(if (on) Alignment.CenterEnd else Alignment.CenterStart).padding(4.dp).size(18.dp)
+                .background(androidx.compose.ui.graphics.Color.White, androidx.compose.foundation.shape.CircleShape))
         }
     }
 }

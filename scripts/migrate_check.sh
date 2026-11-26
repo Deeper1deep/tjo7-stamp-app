@@ -78,6 +78,8 @@ adb shell am force-stop $PKG; sleep 2
 adb install -r "$NEW" || { echo "MIGRATION: FAIL (install over)"; exit 0; }
 adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null
 sleep 12
+echo "MIGRATION: crash buffer after first launch of the new app:"; adb logcat -b crash -d 2>&1 | grep -v "^---" | tail -30 | cut -c1-220
+adb logcat -d 2>&1 | grep -E "AndroidRuntime|FATAL|com.tjo7.stamp.*(Exception|Error)" | tail -15 | cut -c1-260
 adb shell screencap -p /sdcard/new_launch.png; adb pull /sdcard/new_launch.png dist/shots/mig_new_1_launch.png >/dev/null 2>&1
 python3 /tmp/ui.py list | head -20
 # close the update sheet if the live check opened it

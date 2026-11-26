@@ -280,6 +280,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _ui.update { it.copy(updateSheet = false) }
     }
 
+    /** Test hook: shows the "update available" card in Settings without opening the sheet. */
+    fun previewUpdateCard(info: com.tjo7.stamp.data.UpdateInfo) = _ui.update { it.copy(update = UpdateUi.Available(info), updateSheet = false) }
     fun openUpdateSheet(v: Boolean) = _ui.update { it.copy(updateSheet = v) }
 
     fun downloadUpdate() {

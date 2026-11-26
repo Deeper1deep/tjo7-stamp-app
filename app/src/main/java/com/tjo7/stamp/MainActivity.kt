@@ -13,6 +13,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -76,28 +82,32 @@ class MainActivity : ComponentActivity() {
                             val fmtName = if (g.format == OutFormat.AUTO) stringResource(R.string.save_status_fmt).substringBefore(" · ") else g.format.name
                             val sizeName = when (g.size) { SizeSel.ORIG -> stringResource(R.string.size_orig); SizeSel.W1080 -> "1080p"; SizeSel.W720 -> "720p"; SizeSel.W540 -> "540p" }
                             val n = st.items.size
-                            SaveBar(
+                            if (st.tab != Tab.SETTINGS) SaveBar(
                                 if (n == 0) stringResource(R.string.save_idle).substringBefore(" · ") else stringResource(R.string.save_status_n, n),
                                 "$fmtName · $sizeName",
                                 if (n > 1 && !g.transparent) stringResource(R.string.download_all) else stringResource(R.string.download_one),
                                 enabled = n > 0 || g.transparent, busy = st.busy,
                             ) { requestExport(n > 1 && !g.transparent) }
-                            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                            val cs0 = MaterialTheme.colorScheme
+                            Row(Modifier.fillMaxWidth().background(cs0.surface).navigationBarsPadding().padding(horizontal = 8.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 val tabs = listOf(
                                     Triple(Tab.EDITOR, R.string.tab_editor, OldIcons.Editor),
                                     Triple(Tab.CREDIT, R.string.tab_credit, OldIcons.Credit),
                                     Triple(Tab.OUTPUT, R.string.tab_output, OldIcons.Output),
                                     Triple(Tab.SETTINGS, R.string.tab_settings, OldIcons.Settings),
                                 )
-                                for ((t, label, icon) in tabs) NavigationBarItem(
-                                    selected = st.tab == t, onClick = { vm.setTab(t) },
-                                    modifier = Modifier.testTag("tab_" + t.name.lowercase()),
-                                    colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.primary, selectedTextColor = MaterialTheme.colorScheme.primary, indicatorColor = MaterialTheme.colorScheme.primaryContainer, unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant, unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant),
-                                    icon = {
-                                        BadgedBox(badge = { if (t == Tab.SETTINGS && st.update is UpdateUi.Available) Badge(containerColor = androidx.compose.ui.graphics.Color(0xFFF2BD69)) }) { Icon(icon, null, Modifier.size(22.dp)) }
-                                    },
-                                    label = { Text(stringResource(label)) },
-                                )
+                                for ((t, label, icon) in tabs) {
+                                    val on = st.tab == t
+                                    val tint = if (on) cs0.primary else cs0.onSurfaceVariant
+                                    Column(Modifier.weight(1f).clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                                        .background(if (on) cs0.primaryContainer else androidx.compose.ui.graphics.Color.Transparent)
+                                        .clickable(role = androidx.compose.ui.semantics.Role.Tab) { vm.setTab(t) }
+                                        .testTag("tab_" + t.name.lowercase()).padding(vertical = 9.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        BadgedBox(badge = { if (t == Tab.SETTINGS && st.update is UpdateUi.Available) Badge(containerColor = androidx.compose.ui.graphics.Color(0xFFF2BD69)) }) { Icon(icon, null, Modifier.size(22.dp), tint = tint) }
+                                        Text(stringResource(label), fontSize = 11.sp, color = tint, fontWeight = if (on) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Medium)
+                                    }
+                                }
                             }
                           }
                         },

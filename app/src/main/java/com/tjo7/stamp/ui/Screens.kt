@@ -63,7 +63,7 @@ fun Stage(st: UiState, vm: MainViewModel, clock: State<Float>, compact: Boolean,
     val showOn = st.editing.mode != CreditMode.BLINK || creditVisibleAt(CreditMode.BLINK, clock.value.toDouble())
     val bmp = if (showOn) on else (st.previewOff ?: on)
     val empty = st.items.isEmpty()
-    Box(Modifier.fillMaxWidth().heightIn(min = if (compact) 0.dp else 200.dp).clip(RoundedCornerShape(if (compact) 22.dp else 24.dp)).background(stageBg)
+    Box(Modifier.fillMaxWidth().heightIn(min = if (compact) 0.dp else 250.dp).clip(RoundedCornerShape(if (compact) 22.dp else 24.dp)).background(stageBg)
         .padding(if (compact) 8.dp else 10.dp), contentAlignment = Alignment.Center) {
         if (bmp != null) {
             BoxWithConstraints(Modifier.fillMaxWidth().heightIn(max = maxH), contentAlignment = Alignment.Center) {

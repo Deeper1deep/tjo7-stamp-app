@@ -85,7 +85,7 @@ class ScreenshotTest {
         clearSheet("b")
         if (!isDark()) tap("theme_toggle")
         rule.runOnUiThread { vm.edit { com.tjo7.stamp.domain.StampSettings() } }  // factory settings, same as the reference screenshots
-        val files = listOf(Support.asset("land.mp4", "p.mp4"), Support.asset("land.png", "p.png"), Support.asset("land.gif", "p.gif"))
+        val files = listOf(Support.asset("land.mp4", "p.mp4"), Support.asset("land.png", "p.png"), Support.asset("land.gif", "p.gif"), Support.asset("sample.png", "q.png"))
         rule.runOnUiThread { vm.importUris(files.map { android.net.Uri.fromFile(it) }, false) }
         // Import and preview run on background dispatchers; give them real time and let the frozen clock tick between polls.
         for (k in 0 until 40) { Thread.sleep(250); rule.mainClock.advanceTimeBy(100) }
@@ -103,6 +103,8 @@ class ScreenshotTest {
                 }
             }
         }
+        rule.runOnUiThread { vm.previewUpdateCard(com.tjo7.stamp.data.UpdateInfo(100, "v8", 9_500_000L, listOf("x"), "https://example.invalid/x.apk", null)) }
+        tap("tab_settings"); shot("pop_dark_settings_update")
         tap("tab_editor")
         tap("save_btn")
         for (k in 0 until 120) { Thread.sleep(500); rule.mainClock.advanceTimeBy(100); if (vm.ui.value.resultsSheet) break }

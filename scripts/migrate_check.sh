@@ -67,6 +67,7 @@ adb shell input keyevent KEYCODE_MOVE_END
 for i in $(seq 1 40); do adb shell input keyevent KEYCODE_DEL; done
 adb shell input text '@migr8test'
 sleep 1
+python3 /tmp/ui.py tap_text "أسود" || true; sleep 1
 adb shell screencap -p /sdcard/old_edit.png; adb pull /sdcard/old_edit.png dist/shots/mig_old_2_edited.png >/dev/null 2>&1
 python3 /tmp/ui.py has_text "@migr8test" || echo "MIGRATION: could not type in the old app"
 python3 /tmp/ui.py tap_text "الإخراج" ; sleep 2

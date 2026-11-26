@@ -49,7 +49,7 @@ class ScreenshotTest {
     }
 
     /** Taps a tagged node, first closing the live update sheet if it is covering the app. */
-    private fun tap(tag: String) { clearSheet("t" + tag); rule.onNodeWithTag(tag).performClick() }
+    private fun tap(tag: String) { clearSheet("t" + tag); rule.onNodeWithTag(tag).performClick(); rule.mainClock.advanceTimeBy(400) }
 
     private fun isDark() = vm.ui.value.dark
 

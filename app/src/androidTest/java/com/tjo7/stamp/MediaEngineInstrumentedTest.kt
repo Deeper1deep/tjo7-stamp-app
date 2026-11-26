@@ -167,4 +167,41 @@ class MediaEngineInstrumentedTest {
         val w = export(info, StampSettings(format = OutFormat.WEBM)); assertEquals(OutFormat.WEBM, w.format)
         checkVideo(w, "video/webm", minOf(500L, info.durationMs / 2), info.durationMs + 1500)
     }
+
+    @Test fun transparentWebmCarriesAnAlphaTrack() {
+        val w = 320; val h = 120; val fps = 15
+        val f = java.io.File(Support.target.getExternalFilesDir(null), "alpha_sample.webm")
+        val enc = AlphaWebmEncoder(f, w, h, fps)
+        val bmp = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+        for (k in 0 until 45) {
+            // red box with a soft alpha ramp on the left half, fully transparent on the right half; the box slides so frames differ
+            val px = IntArray(w * h) { i -> val x = i % w; val y = i / w
+                if (x < 160 && y > 20 + (k % 10)) (((x * 255 / 160) shl 24) or 0xFF2020) else 0 }
+            bmp.setPixels(px, 0, w, 0, 0, w, h)
+            enc.add(bmp)
+        }
+        enc.finish()
+        assertTrue("key frames line up", enc.keyframesAligned())
+        val bytes = f.readBytes()
+        fun has(vararg b: Int): Boolean { outer@ for (i in 0..bytes.size - b.size) { for (j in b.indices) if ((bytes[i + j].toInt() and 255) != b[j]) continue@outer; return true }; return false }
+        assertTrue("EBML header", has(0x1A, 0x45, 0xDF, 0xA3)); assertTrue("alpha mode", has(0x53, 0xC0, 0x81, 0x01)); assertTrue("BlockAdditions", has(0x75, 0xA1))
+        val r = MediaMetadataRetriever(); r.setDataSource(f.absolutePath)
+        val dur = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)!!.toLong()
+        assertTrue("duration $dur", dur in 2000..4000)
+        assertNotNull(r.getFrameAtTime(1_000_000, MediaMetadataRetriever.OPTION_CLOSEST))
+        // keep a copy where CI can pull it for an outside check
+        val ua = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
+        ua.executeShellCommand("mkdir -p /data/local/tmp/shots").close()
+        val pfd = ua.executeShellCommand("cp " + f.absolutePath + " /data/local/tmp/shots/alpha_sample.webm")
+        android.os.ParcelFileDescriptor.AutoCloseInputStream(pfd).use { it.readBytes() }
+    }
+
+    @Test fun engineExportsTransparentWebm() {
+        val info = Support.probe(Support.asset("sample.png"))
+        val o = export(info, StampSettings(transparent = true, format = OutFormat.WEBM, mode = CreditMode.BLINK))
+        assertEquals(OutFormat.WEBM, o.format)
+        assertTrue(o.size > 1500)
+        val r = MediaMetadataRetriever(); r.setDataSource(o.file.absolutePath)
+        assertEquals("video/webm", r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE))
+    }
 }

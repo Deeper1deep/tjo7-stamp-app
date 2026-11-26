@@ -34,7 +34,7 @@ class MediaEngine(private val ctx: Context, val renderer: StampRenderer) {
 
     fun resolveFormat(info: SourceInfo, s: StampSettings): OutFormat {
         if (s.sticker && !s.transparent) return OutFormat.WEBP
-        if (s.transparent) return when (s.format) { OutFormat.PNG -> OutFormat.PNG; OutFormat.WEBP -> OutFormat.WEBP; else -> OutFormat.GIF }
+        if (s.transparent) return when (s.format) { OutFormat.PNG -> OutFormat.PNG; OutFormat.WEBP -> OutFormat.WEBP; OutFormat.WEBM -> OutFormat.WEBM; else -> OutFormat.GIF }
         if (s.format != OutFormat.AUTO) return s.format
         return when (info.kind) {
             MediaKind.ANIM_GIF, MediaKind.ANIM_WEBP -> OutFormat.GIF
@@ -123,6 +123,7 @@ class MediaEngine(private val ctx: Context, val renderer: StampRenderer) {
                         videoExporter.export(info, s, w and -2, h and -2, f, fmt == OutFormat.WEBM, onProgress)
                         ExportOutput(f, f.name, fmt, null, 0)
                     }
+                    fmt == OutFormat.WEBM && s.transparent -> exportAlphaWebm(info, s, onProgress, check)
                     (fmt == OutFormat.MP4 || fmt == OutFormat.WEBM) && !s.transparent -> exportFramesVideo(info, s, fmt == OutFormat.WEBM, onProgress, check)
                     fmt == OutFormat.GIF -> exportGif(info, s, box, onProgress, check)
                     fmt == OutFormat.WEBP && (isAnimated(info, s)) -> exportAnimWebp(info, s, box, onProgress, check)
@@ -177,6 +178,27 @@ class MediaEngine(private val ctx: Context, val renderer: StampRenderer) {
         }
         file.writeBytes(bytes)
         return ExportOutput(file, file.name, fmt, null, if (lim) WhatsApp.STATIC_MAX else 0)
+    }
+
+    /** Transparent text-only clip as VP8 WebM with an alpha channel (3 seconds; the credit blinks in the second second when blink is on). */
+    private fun exportAlphaWebm(info: SourceInfo, s: StampSettings, onProgress: (Float) -> Unit, check: () -> Unit): ExportOutput {
+        val (w0, h0) = frameDims(info, s, null, true)
+        val w = w0 and -2; val h = h0 and -2
+        val file = overlayName("webm")
+        val fps = 15
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val enc = AlphaWebmEncoder(file, w, h, fps)
+        try {
+            val steps = if (s.mode == CreditMode.STATIC) listOf(true to 3) else listOf(false to 1, true to 1, false to 1)
+            for ((i, st) in steps.withIndex()) {
+                check()
+                renderer.renderFrame(null, w, h, s, st.first, false, null, bmp)
+                enc.add(bmp, st.second * fps)
+                onProgress((i + 1f) / steps.size)
+            }
+            enc.finish()
+        } catch (e: Exception) { enc.abort(); file.delete(); throw e }
+        return ExportOutput(file, file.name, OutFormat.WEBM, null, 0)
     }
 
     // ---------------------------------------------------------------- image / GIF -> video

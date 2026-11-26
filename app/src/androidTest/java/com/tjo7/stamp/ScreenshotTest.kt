@@ -23,15 +23,19 @@ private object ParcelReader {
 class ScreenshotTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
 
+    private val vm get() = androidx.lifecycle.ViewModelProvider(rule.activity)[com.tjo7.stamp.ui.MainViewModel::class.java]
+
     private fun shot(name: String) {
         rule.mainClock.advanceTimeBy(800)
-        val dir = File(Support.target.getExternalFilesDir(null), "shots").apply { mkdirs() }
-        val bmp = rule.onRoot().captureToImage().asAndroidBitmap()
-        File(dir, "$name.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        // The app (and its files) is uninstalled when the test task ends, so also keep a copy where CI can pull it.
+        // The app (and its files) is uninstalled when the test task ends, so keep the screencap where CI can pull it.
         val ua = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
         ua.executeShellCommand("mkdir -p /data/local/tmp/shots").close()
         ParcelReader.drain(ua.executeShellCommand("screencap -p /data/local/tmp/shots/$name.png"))
+    }
+
+    /** A live update check can open the update sheet over the app; photograph it once, then close it so taps reach the screen. */
+    private fun clearSheet(tag: String) {
+        if (vm.ui.value.updateSheet) { shot("sheet_upd_$tag"); rule.runOnUiThread { vm.openUpdateSheet(false) }; rule.mainClock.advanceTimeBy(800) }
     }
 
     private fun info() {
@@ -51,11 +55,14 @@ class ScreenshotTest {
         rule.mainClock.autoAdvance = false
         rule.mainClock.advanceTimeBy(1000)
         info()
+        for (k in 0 until 8) { Thread.sleep(250); rule.mainClock.advanceTimeBy(100) }
+        clearSheet("a")
         // Force dark first.
         if (!isDark()) rule.onNodeWithTag("theme_toggle").performClick()
         rule.mainClock.advanceTimeBy(800)
         for (round in listOf("dark", "light")) {
             for (t in listOf("editor", "credit", "output", "settings")) {
+                clearSheet("$round$t")
                 rule.onNodeWithTag("tab_$t").performClick()
                 shot("new_${round}_$t")
             }
@@ -69,13 +76,15 @@ class ScreenshotTest {
     @Test fun capturePopulated() {
         rule.mainClock.autoAdvance = false
         rule.mainClock.advanceTimeBy(1000)
-        val vm = androidx.lifecycle.ViewModelProvider(rule.activity)[com.tjo7.stamp.ui.MainViewModel::class.java]
+        for (k in 0 until 8) { Thread.sleep(250); rule.mainClock.advanceTimeBy(100) }
+        clearSheet("b")
         if (!isDark()) rule.onNodeWithTag("theme_toggle").performClick()
         val files = listOf(Support.asset("sample.mp4", "p.mp4"), Support.asset("sample.png", "p.png"), Support.asset("sample.gif", "p.gif"))
         rule.runOnUiThread { vm.importUris(files.map { android.net.Uri.fromFile(it) }, false) }
         // Import and preview run on background dispatchers; give them real time and let the frozen clock tick between polls.
         for (k in 0 until 40) { Thread.sleep(250); rule.mainClock.advanceTimeBy(100) }
         for (t in listOf("editor", "credit", "output", "settings")) {
+            clearSheet(t)
             rule.onNodeWithTag("tab_$t").performClick()
             if (t == "credit") rule.runOnUiThread { vm.setMove(true) }
             shot("pop_dark_$t")

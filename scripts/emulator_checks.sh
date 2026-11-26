@@ -28,3 +28,6 @@ echo "INSTALL OVER OLD APP: OK ($OLD_CODE -> $NEW_CODE)"
 adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null
 sleep 8
 adb shell pidof $PKG >/dev/null && echo "app launches after update: OK"
+
+echo "== migration check (build-26 settings -> new app)"
+bash scripts/migrate_check.sh "$NEW" || true

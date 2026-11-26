@@ -32,7 +32,7 @@ def tap(t):
 cmd=sys.argv[1]
 if cmd=='tap_text':
     for _ in range(12):
-        t=find(lambda t: t[0]==sys.argv[2] or t[1]==sys.argv[2])
+        t=find(lambda t: t[0]==sys.argv[2] or t[1]==sys.argv[2] or (len(sys.argv)>3 and (t[0].startswith(sys.argv[2]) or t[1].startswith(sys.argv[2]))))
         if t: tap(t); print('tapped',sys.argv[2]); sys.exit(0)
         time.sleep(1)
     print('NOT FOUND',sys.argv[2]); sys.exit(1)
@@ -70,7 +70,7 @@ sleep 1
 adb shell screencap -p /sdcard/old_edit.png; adb pull /sdcard/old_edit.png dist/shots/mig_old_2_edited.png >/dev/null 2>&1
 python3 /tmp/ui.py has_text "@migr8test" || echo "MIGRATION: could not type in the old app"
 python3 /tmp/ui.py tap_text "الإخراج" ; sleep 2
-python3 /tmp/ui.py tap_text "GIF" ; sleep 2
+python3 /tmp/ui.py tap_text "GIF" prefix ; sleep 2
 adb shell screencap -p /sdcard/old_out.png; adb pull /sdcard/old_out.png dist/shots/mig_old_3_output.png >/dev/null 2>&1
 sleep 4
 adb shell am force-stop $PKG; sleep 2

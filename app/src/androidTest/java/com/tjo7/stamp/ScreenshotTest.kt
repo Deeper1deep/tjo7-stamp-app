@@ -51,7 +51,7 @@ class ScreenshotTest {
     /** Taps a tagged node, first closing the live update sheet if it is covering the app. */
     private fun tap(tag: String) { clearSheet("t" + tag); rule.onNodeWithTag(tag).performClick() }
 
-    private fun isDark() = rule.onAllNodesWithText("☀").fetchSemanticsNodes().isNotEmpty()
+    private fun isDark() = vm.ui.value.dark
 
     @Test fun captureAllTabs() {
         // The blink preview animates forever; freeze the test clock so it can be captured.

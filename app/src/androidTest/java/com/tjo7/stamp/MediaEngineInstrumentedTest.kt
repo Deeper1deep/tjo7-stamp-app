@@ -184,7 +184,7 @@ class MediaEngineInstrumentedTest {
         assertTrue("key frames line up", enc.keyframesAligned())
         val bytes = f.readBytes()
         fun has(vararg b: Int): Boolean { outer@ for (i in 0..bytes.size - b.size) { for (j in b.indices) if ((bytes[i + j].toInt() and 255) != b[j]) continue@outer; return true }; return false }
-        assertTrue("EBML header", has(0x1A, 0x45, 0xDF, 0xA3)); assertTrue("alpha mode", has(0x53, 0xC0, 0x81, 0x01)); assertTrue("BlockAdditions", has(0x75, 0xA1))
+        assertTrue("EBML header", has(0x1A, 0x45, 0xDF, 0xA3)); assertTrue("alpha mode", has(0x53, 0xC0, 0x01, 0, 0, 0, 0, 0, 0, 0x01, 0x01)); assertTrue("BlockAdditions", has(0x75, 0xA1))
         val r = MediaMetadataRetriever(); r.setDataSource(f.absolutePath)
         val dur = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)!!.toLong()
         assertTrue("duration $dur", dur in 2000..4000)

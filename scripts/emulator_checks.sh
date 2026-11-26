@@ -3,6 +3,10 @@
 set -euo pipefail
 PKG=com.tjo7.stamp
 NEW=dist/tjo7-stamp.apk
+echo "== migration check (build-26 settings -> new app)"
+bash scripts/migrate_check.sh "$NEW" || true
+mkdir -p dist/shots; adb pull /data/local/tmp/shots/. dist/shots/ >/dev/null 2>&1 || true
+adb uninstall $PKG >/dev/null 2>&1 || true
 echo "== instrumented tests"
 ok=0; for i in 1 2; do gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace && ok=1 && break; sleep 30; done; [ "$ok" = 1 ] || { echo "INSTRUMENTED TESTS FAILED"; mkdir -p dist/shots; adb pull /data/local/tmp/shots/. dist/shots/ >/dev/null 2>&1 || true; adb logcat -d | tail -150; exit 1; }
 
@@ -28,6 +32,3 @@ echo "INSTALL OVER OLD APP: OK ($OLD_CODE -> $NEW_CODE)"
 adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 >/dev/null
 sleep 8
 adb shell pidof $PKG >/dev/null && echo "app launches after update: OK"
-
-echo "== migration check (build-26 settings -> new app)"
-bash scripts/migrate_check.sh "$NEW" || true

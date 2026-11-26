@@ -83,7 +83,7 @@ class ScreenshotTest {
         clearSheet("b")
         if (!isDark()) tap("theme_toggle")
         rule.runOnUiThread { vm.edit { com.tjo7.stamp.domain.StampSettings() } }  // factory settings, same as the reference screenshots
-        val files = listOf(Support.asset("land.mp4", "p.mp4"), Support.asset("land.png", "p.png"), Support.asset("sample.gif", "p.gif"))
+        val files = listOf(Support.asset("land.mp4", "p.mp4"), Support.asset("land.png", "p.png"), Support.asset("land.gif", "p.gif"))
         rule.runOnUiThread { vm.importUris(files.map { android.net.Uri.fromFile(it) }, false) }
         // Import and preview run on background dispatchers; give them real time and let the frozen clock tick between polls.
         for (k in 0 until 40) { Thread.sleep(250); rule.mainClock.advanceTimeBy(100) }

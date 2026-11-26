@@ -77,6 +77,9 @@ sleep 1
 adb shell screencap -p /sdcard/old_edit.png; adb pull /sdcard/old_edit.png dist/shots/mig_old_2_edited.png >/dev/null 2>&1
 python3 /tmp/ui.py has_text "@migr8test" || echo "MIGRATION: could not type in the old app"
 sleep 4
+echo "MIGRATION: old app localStorage on disk before the update:"
+adb root >/dev/null 2>&1 || true; sleep 3
+adb shell 'cat /data/data/com.tjo7.stamp/app_webview/Default/Local\ Storage/leveldb/* 2>/dev/null' | strings | grep -E "tjo7\.(settings|theme)" | tail -4 | cut -c1-500 || true
 adb shell am force-stop $PKG; sleep 2
 adb install -r "$NEW" || { echo "MIGRATION: FAIL (install over)"; exit 0; }
 for try in 1 2 3; do

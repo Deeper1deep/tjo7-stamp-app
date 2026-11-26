@@ -48,6 +48,9 @@ class ScreenshotTest {
         ParcelReader.drain(ua.executeShellCommand("sh -c 'echo \"" + txt + "\" > /data/local/tmp/shots/info.txt'"))
     }
 
+    /** Taps a tagged node, first closing the live update sheet if it is covering the app. */
+    private fun tap(tag: String) { clearSheet("t" + tag); rule.onNodeWithTag(tag).performClick() }
+
     private fun isDark() = rule.onAllNodesWithText("☀").fetchSemanticsNodes().isNotEmpty()
 
     @Test fun captureAllTabs() {
@@ -58,16 +61,16 @@ class ScreenshotTest {
         for (k in 0 until 8) { Thread.sleep(250); rule.mainClock.advanceTimeBy(100) }
         clearSheet("a")
         // Force dark first.
-        if (!isDark()) rule.onNodeWithTag("theme_toggle").performClick()
+        if (!isDark()) tap("theme_toggle")
         rule.mainClock.advanceTimeBy(800)
         for (round in listOf("dark", "light")) {
             for (t in listOf("editor", "credit", "output", "settings")) {
                 clearSheet("$round$t")
-                rule.onNodeWithTag("tab_$t").performClick()
+                tap("tab_$t")
                 shot("new_${round}_$t")
             }
-            rule.onNodeWithTag("tab_editor").performClick()
-            rule.onNodeWithTag("theme_toggle").performClick()
+            tap("tab_editor")
+            tap("theme_toggle")
             rule.mainClock.advanceTimeBy(800)
         }
     }
@@ -78,19 +81,19 @@ class ScreenshotTest {
         rule.mainClock.advanceTimeBy(1000)
         for (k in 0 until 8) { Thread.sleep(250); rule.mainClock.advanceTimeBy(100) }
         clearSheet("b")
-        if (!isDark()) rule.onNodeWithTag("theme_toggle").performClick()
+        if (!isDark()) tap("theme_toggle")
         val files = listOf(Support.asset("sample.mp4", "p.mp4"), Support.asset("sample.png", "p.png"), Support.asset("sample.gif", "p.gif"))
         rule.runOnUiThread { vm.importUris(files.map { android.net.Uri.fromFile(it) }, false) }
         // Import and preview run on background dispatchers; give them real time and let the frozen clock tick between polls.
         for (k in 0 until 40) { Thread.sleep(250); rule.mainClock.advanceTimeBy(100) }
         for (t in listOf("editor", "credit", "output", "settings")) {
             clearSheet(t)
-            rule.onNodeWithTag("tab_$t").performClick()
+            tap("tab_$t")
             if (t == "credit") rule.runOnUiThread { vm.setMove(true) }
             shot("pop_dark_$t")
         }
-        rule.onNodeWithTag("tab_editor").performClick()
-        rule.onNodeWithTag("save_btn").performClick()
+        tap("tab_editor")
+        tap("save_btn")
         for (k in 0 until 120) { Thread.sleep(500); rule.mainClock.advanceTimeBy(100); if (vm.ui.value.resultsSheet) break }
         for (k in 0 until 6) { Thread.sleep(300); rule.mainClock.advanceTimeBy(300) }
         shot("pop_dark_results")

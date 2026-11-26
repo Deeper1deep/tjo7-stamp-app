@@ -6,6 +6,7 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
@@ -33,16 +34,56 @@ class ScreenshotTest {
         ParcelReader.drain(ua.executeShellCommand("screencap -p /data/local/tmp/shots/$name.png"))
     }
 
+    private fun info() {
+        val dm = Support.target.resources.displayMetrics
+        val txt = "px=" + dm.widthPixels + "x" + dm.heightPixels + " density=" + dm.density + " dpi=" + dm.densityDpi + " fontScale=" + Support.target.resources.configuration.fontScale +
+            " dp=" + (dm.widthPixels / dm.density) + "x" + (dm.heightPixels / dm.density)
+        val dir = File(Support.target.cacheDir, "info.txt"); dir.writeText(txt)
+        val ua = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
+        ua.executeShellCommand("mkdir -p /data/local/tmp/shots").close()
+        ParcelReader.drain(ua.executeShellCommand("sh -c 'echo \"" + txt + "\" > /data/local/tmp/shots/info.txt'"))
+    }
+
+    private fun isDark() = rule.onAllNodesWithText("☀").fetchSemanticsNodes().isNotEmpty()
+
     @Test fun captureAllTabs() {
         // The blink preview animates forever; freeze the test clock so it can be captured.
         rule.mainClock.autoAdvance = false
         rule.mainClock.advanceTimeBy(1000)
+        info()
+        // Force dark first.
+        if (!isDark()) rule.onNodeWithTag("theme_toggle").performClick()
+        rule.mainClock.advanceTimeBy(800)
         for (round in listOf("dark", "light")) {
             for (t in listOf("editor", "credit", "output", "settings")) {
                 rule.onNodeWithTag("tab_$t").performClick()
                 shot("new_${round}_$t")
             }
+            rule.onNodeWithTag("tab_editor").performClick()
             rule.onNodeWithTag("theme_toggle").performClick()
+            rule.mainClock.advanceTimeBy(800)
         }
+    }
+
+    /** Same screens with a video, an image and a GIF loaded, plus the results sheet. */
+    @Test fun capturePopulated() {
+        rule.mainClock.autoAdvance = false
+        rule.mainClock.advanceTimeBy(1000)
+        val vm = androidx.lifecycle.ViewModelProvider(rule.activity)[com.tjo7.stamp.ui.MainViewModel::class.java]
+        if (!isDark()) rule.onNodeWithTag("theme_toggle").performClick()
+        val files = listOf(Support.asset("sample.mp4", "p.mp4"), Support.asset("sample.png", "p.png"), Support.asset("sample.gif", "p.gif"))
+        rule.runOnUiThread { vm.importUris(files.map { android.net.Uri.fromFile(it) }, false) }
+        // Import and preview run on background dispatchers; give them real time and let the frozen clock tick between polls.
+        for (k in 0 until 40) { Thread.sleep(250); rule.mainClock.advanceTimeBy(100) }
+        for (t in listOf("editor", "credit", "output", "settings")) {
+            rule.onNodeWithTag("tab_$t").performClick()
+            if (t == "credit") rule.runOnUiThread { vm.setMove(true) }
+            shot("pop_dark_$t")
+        }
+        rule.onNodeWithTag("tab_editor").performClick()
+        rule.onNodeWithTag("save_btn").performClick()
+        for (k in 0 until 120) { Thread.sleep(500); rule.mainClock.advanceTimeBy(100); if (vm.ui.value.resultsSheet) break }
+        for (k in 0 until 6) { Thread.sleep(300); rule.mainClock.advanceTimeBy(300) }
+        shot("pop_dark_results")
     }
 }

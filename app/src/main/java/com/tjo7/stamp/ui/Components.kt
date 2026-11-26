@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.sp
 import com.tjo7.stamp.domain.Corner
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -26,9 +27,9 @@ val Pad = 16.dp
 
 @Composable
 fun Section(title: String, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Surface(modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surface,
+    Surface(modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))) {
-        Column(Modifier.padding(Pad), verticalArrangement = Arrangement.spacedBy(Gap)) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (title.isNotBlank()) Text(title, style = MaterialTheme.typography.titleMedium)
             content()
         }
@@ -54,11 +55,12 @@ fun <T> Segmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> 
         for ((v, label) in options) {
             val on = v == selected
             Box(Modifier.weight(1f).clip(RoundedCornerShape(10.dp))
-                .background(if (on) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent)
+                .background(if (on) MaterialTheme.colorScheme.surface else androidx.compose.ui.graphics.Color.Transparent)
+                .then(if (on) Modifier.border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp)) else Modifier)
                 .clickable(role = Role.RadioButton) { onSelect(v) }.padding(vertical = 10.dp, horizontal = 4.dp),
                 contentAlignment = Alignment.Center) {
                 Text(label, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center, maxLines = 1,
-                    color = if (on) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    color = if (on) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -164,17 +166,50 @@ fun AppHeader(dark: Boolean, onToggleTheme: () -> Unit) {
 }
 
 @Composable
-fun SaveBar(status: String, enabled: Boolean, busy: Boolean, onSave: () -> Unit) {
+fun SaveBar(title: String, sub: String, label: String, enabled: Boolean, busy: Boolean, onSave: () -> Unit) {
     val cs = MaterialTheme.colorScheme
-    Row(Modifier.fillMaxWidth().background(cs.background).border(1.dp, cs.outline).padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Button(onClick = onSave, enabled = enabled && !busy, shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = BtnBlue, contentColor = androidx.compose.ui.graphics.Color.White),
-            modifier = Modifier.height(54.dp)) {
-            Text(androidx.compose.ui.res.stringResource(com.tjo7.stamp.R.string.save_btn), style = MaterialTheme.typography.titleMedium)
+    Row(Modifier.fillMaxWidth().background(cs.background).border(1.dp, cs.outline).padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(sub, fontSize = 11.sp, color = cs.onSurfaceVariant, lineHeight = 16.sp)
         }
-        Text(status, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, modifier = Modifier.weight(1f))
+        Button(onClick = onSave, enabled = enabled && !busy, shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = BtnBlue, contentColor = androidx.compose.ui.graphics.Color.White),
+            contentPadding = PaddingValues(horizontal = 20.dp), modifier = Modifier.height(48.dp).testTag("save_btn")) {
+            Icon(OldIcons.Download, null, Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(label, style = MaterialTheme.typography.titleMedium)
+        }
     }
+}
+
+/** Tab heading used by the Credit, Output and Settings screens: title and subtitle at the start, optional action at the end. */
+@Composable
+fun TabTitle(title: String, sub: String? = null, action: (@Composable () -> Unit)? = null) {
+    val cs = MaterialTheme.colorScheme
+    Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp).padding(top = 14.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleLarge)
+            if (sub != null) Text(sub, fontSize = 11.sp, color = cs.onSurfaceVariant)
+        }
+        if (action != null) action()
+    }
+}
+
+@Composable
+fun IconTile(icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    val cs = MaterialTheme.colorScheme
+    Box(Modifier.size(34.dp).clip(RoundedCornerShape(11.dp)).background(cs.primaryContainer), contentAlignment = Alignment.Center) {
+        Icon(icon, null, Modifier.size(18.dp), tint = cs.primary)
+    }
+}
+
+@Composable
+fun InfoChip(text: String) {
+    val cs = MaterialTheme.colorScheme
+    Text(text, fontSize = 10.5.sp, color = cs.primary, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+        modifier = Modifier.clip(RoundedCornerShape(50)).background(cs.primaryContainer).padding(horizontal = 10.dp, vertical = 5.dp))
 }
 
 // ------------------------------------------------------------------ old-UI pieces
@@ -198,6 +233,11 @@ object OldIcons {
     val Chat by lazy { build("chat", "M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.7-5.4A8.4 8.4 0 1 1 21 11.5z") }
     val Chevron by lazy { build("chevron", "M15 6l-6 6 6 6") }
     val Reset by lazy { build("reset", "M3 12a9 9 0 1 0 3-6.7L3 8", "M3 3v5h5") }
+    val Download by lazy { build("download", "M12 4v11M7 11l5 5 5-5", "M5 20h14") }
+    val Pause by lazy { build("pause", "M8 5v14M16 5v14") }
+    val Plus by lazy { build("plus", "M12 5v14M5 12h14") }
+    val Speaker by lazy { build("speaker", "M4 10v4h4l5 4V6l-5 4z", "M16.5 9a4 4 0 0 1 0 6") }
+    val Sticker by lazy { build("sticker", "M6 4h12a2 2 0 0 1 2 2v8l-6 6H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z", "M20 14h-4a2 2 0 0 0-2 2v4") }
     val Shield by lazy { build("shield", "M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z", "M9 12l2 2 4-4") }
 }
 

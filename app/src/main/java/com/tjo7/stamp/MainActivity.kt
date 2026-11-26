@@ -33,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.content.ContextCompat
 import com.tjo7.stamp.ui.*
+import com.tjo7.stamp.domain.*
 
 class MainActivity : ComponentActivity() {
     private val vm: MainViewModel by viewModels()
@@ -68,13 +69,19 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         containerColor = MaterialTheme.colorScheme.background,
                         snackbarHost = { SnackbarHost(snack) },
-                        topBar = { AppHeader(st.dark) { vm.setDark(!st.dark) } },
+                        topBar = { if (st.tab == Tab.EDITOR) AppHeader(st.dark) { vm.setDark(!st.dark) } },
                         bottomBar = {
                           Column {
+                            val g = st.global
+                            val fmtName = if (g.format == OutFormat.AUTO) stringResource(R.string.save_status_fmt).substringBefore(" · ") else g.format.name
+                            val sizeName = when (g.size) { SizeSel.ORIG -> stringResource(R.string.size_orig); SizeSel.W1080 -> "1080p"; SizeSel.W720 -> "720p"; SizeSel.W540 -> "540p" }
+                            val n = st.items.size
                             SaveBar(
-                                if (st.items.isEmpty()) stringResource(R.string.save_idle) else "${st.items.size} · " + stringResource(R.string.save_idle).substringAfter("· "),
-                                enabled = st.items.isNotEmpty() || st.global.transparent, busy = st.busy,
-                            ) { requestExport(st.items.size > 1 && !st.global.transparent) }
+                                if (n == 0) stringResource(R.string.save_idle).substringBefore(" · ") else stringResource(R.string.save_status_n, n),
+                                "$fmtName · $sizeName",
+                                if (n > 1 && !g.transparent) stringResource(R.string.download_all) else stringResource(R.string.download_one),
+                                enabled = n > 0 || g.transparent, busy = st.busy,
+                            ) { requestExport(n > 1 && !g.transparent) }
                             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                                 val tabs = listOf(
                                     Triple(Tab.EDITOR, R.string.tab_editor, OldIcons.Editor),
@@ -107,6 +114,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                         UpdateSheet(st, vm) { vm.installIntent()?.let { startActivity(it) } }
+                        ResultsSheet(st, vm) { e -> vm.shareIntent(e)?.let { startActivity(it) } }
                     }
                 }
             }

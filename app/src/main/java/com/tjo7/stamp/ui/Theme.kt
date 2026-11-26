@@ -48,11 +48,11 @@ private fun type(): Typography {
     val base = Typography()
     fun TextStyle.p() = copy(fontFamily = Poppins)
     return Typography(
-        titleLarge = base.titleLarge.p().copy(fontWeight = FontWeight.Bold, fontSize = 20.sp),
-        titleMedium = base.titleMedium.p().copy(fontWeight = FontWeight.Bold, fontSize = 16.sp),
-        bodyLarge = base.bodyLarge.p(), bodyMedium = base.bodyMedium.p().copy(fontSize = 14.sp),
-        bodySmall = base.bodySmall.p().copy(fontSize = 12.sp),
-        labelLarge = base.labelLarge.p(), labelMedium = base.labelMedium.p(),
+        titleLarge = base.titleLarge.p().copy(fontWeight = FontWeight.Bold, fontSize = 19.sp),
+        titleMedium = base.titleMedium.p().copy(fontWeight = FontWeight.Bold, fontSize = 14.sp),
+        bodyLarge = base.bodyLarge.p().copy(fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold), bodyMedium = base.bodyMedium.p().copy(fontSize = 12.5.sp),
+        bodySmall = base.bodySmall.p().copy(fontSize = 11.sp),
+        labelLarge = base.labelLarge.p().copy(fontSize = 13.sp), labelMedium = base.labelMedium.p().copy(fontSize = 11.sp),
     )
 }
 

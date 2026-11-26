@@ -44,6 +44,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var updateJob: Job? = null
     private var base: Bitmap? = null
     private var baseId = -1L
+    private var baseSeek = -1L
     private var sample: Bitmap? = null
     private var checkedOnce = false
 
@@ -137,7 +138,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun select(i: Int) { _ui.update { it.copy(current = i.coerceIn(0, maxOf(0, it.items.size - 1))) }; refreshPreview() }
+    fun select(i: Int) { _ui.update { it.copy(current = i.coerceIn(0, maxOf(0, it.items.size - 1)), seekMs = 0L) }; refreshPreview() }
+    fun seek(ms: Long) { _ui.update { it.copy(seekMs = ms.coerceAtLeast(0L)) }; refreshPreview() }
+    fun closeResults() = _ui.update { it.copy(resultsSheet = false) }
 
     fun remove(i: Int) {
         _ui.update { st ->
@@ -157,8 +160,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val s = st.effective(item)
             val bmp = withContext(Dispatchers.Default) {
                 try {
-                    if (item != null && (baseId != item.info.id || base == null)) {
-                        base = SourceLoader.previewFrame(ctx, item.info, 1080); baseId = item.info.id
+                    val seekNow = if (item != null && item.info.kind == MediaKind.VIDEO) st.seekMs else -1L
+                    if (item != null && (baseId != item.info.id || base == null || baseSeek != seekNow)) {
+                        base = SourceLoader.previewFrame(ctx, item.info, 1080, seekNow); baseId = item.info.id; baseSeek = seekNow
                     }
                     if (item == null) { if (sample == null) sample = com.tjo7.stamp.media.SampleImage.make(); base = sample; baseId = -1 }
                     val b = if (s.transparent) null else base
@@ -205,7 +209,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             if (out.size - ok > 0) parts.add(ctx.getString(R.string.msg_failed, out.size - ok))
             if (over > 0) parts.add(ctx.getString(R.string.msg_over_limit, over))
             if (cut > 0) parts.add(ctx.getString(R.string.msg_cut, cut))
-            _ui.update { it.copy(busy = false, progress = 1f, message = parts.joinToString(" · ")) }
+            _ui.update { it.copy(busy = false, progress = 1f, message = parts.joinToString(" · "), resultsSheet = out.isNotEmpty()) }
         }
     }
 

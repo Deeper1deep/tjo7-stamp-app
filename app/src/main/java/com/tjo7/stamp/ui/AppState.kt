@@ -44,6 +44,8 @@ data class UiState(
     val updateSheet: Boolean = false,
     val dark: Boolean = true,
     val moveOn: Boolean = false,
+    val seekMs: Long = 0L,
+    val resultsSheet: Boolean = false,
     val settingsLoaded: Boolean = false,
     val version: String = "",
 ) {

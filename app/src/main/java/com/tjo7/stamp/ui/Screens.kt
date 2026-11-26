@@ -81,7 +81,10 @@ fun Stage(st: UiState, vm: MainViewModel, clock: State<Float>, compact: Boolean,
             }
         } else if (st.previewLoading) CircularProgressIndicator()
         val it0 = st.currentItem
-        if (it0 != null && !st.global.transparent) {
+        if (compact && st.moveOn && !st.global.transparent && it0 != null) {
+            Text(stringResource(R.string.move_on_chip), color = Color.White, fontSize = 10.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                modifier = Modifier.align(Alignment.TopStart).padding(2.dp).background(Color(0xCC2A47E8), RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 3.dp))
+        } else if (it0 != null && !st.global.transparent && !compact) {
             val i = it0.info
             Text(i.width.toString() + "×" + i.height + " · " + fmtBytes(i.sizeBytes) + if (i.durationMs > 0) " · " + fmtClock(i.durationMs / 1000.0) else "",
                 color = Color.White, fontSize = 11.5.sp, modifier = Modifier.align(Alignment.TopStart).padding(4.dp)
@@ -155,38 +158,81 @@ fun Transport(st: UiState, clock: State<Float>) {
     }
 }
 
+@Composable
+fun SeekTransport(st: UiState, vm: MainViewModel) {
+    val cs = MaterialTheme.colorScheme
+    val item = st.currentItem ?: return
+    val dur = item.info.durationMs.coerceAtLeast(1L)
+    var playing by remember(item.info.id) { mutableStateOf(false) }
+    val seekNow by rememberUpdatedState(st.seekMs)
+    LaunchedEffect(playing, item.info.id) {
+        while (playing) {
+            kotlinx.coroutines.delay(450)
+            val n = seekNow + 450
+            vm.seek(if (n >= dur) 0L else n)
+        }
+    }
+    fun mmss(ms: Long): String { val t = (ms / 1000).toInt(); return "%d:%02d".format(t / 60, t % 60) }
+    Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(Modifier.size(42.dp).clip(androidx.compose.foundation.shape.CircleShape).background(BtnBlue).testTag("play_btn")
+            .clickable { playing = !playing }, contentAlignment = Alignment.Center) {
+            if (playing) Icon(OldIcons.Pause, null, Modifier.size(22.dp), tint = Color.White)
+            else Icon(Icons.Default.PlayArrow, null, Modifier.size(26.dp), tint = Color.White)
+        }
+        Column(Modifier.weight(1f)) {
+            androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
+                Slider(value = (st.seekMs.toFloat() / dur).coerceIn(0f, 1f), onValueChange = { vm.seek((it * dur).toLong()) },
+                    modifier = Modifier.fillMaxWidth().height(26.dp).testTag("seek"))
+            }
+            val cur = st.currentItem
+            Text(stringResource(if (st.editing.mode == CreditMode.BLINK) R.string.tn_blink_vid else R.string.tn_static_vid), fontSize = 10.5.sp, color = cs.onSurfaceVariant)
+        }
+        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
+            Text(mmss(st.seekMs) + " / " + mmss(dur), fontSize = 11.sp, color = cs.onSurfaceVariant)
+        }
+    }
+}
+
 // ------------------------------------------------------------------ editor
 @Composable
 fun FilmStrip(st: UiState, vm: MainViewModel, onPick: () -> Unit) {
     val cs = MaterialTheme.colorScheme
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(top = 8.dp, bottom = 6.dp, start = 2.dp, end = 2.dp)) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(R.string.files_h), style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.width(8.dp))
+        Text(st.items.size.toString(), fontSize = 11.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = cs.primary,
+            modifier = Modifier.clip(androidx.compose.foundation.shape.CircleShape).background(cs.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp))
+        Spacer(Modifier.weight(1f))
+        Row(Modifier.clip(RoundedCornerShape(14.dp)).background(cs.surface).border(1.dp, cs.outline, RoundedCornerShape(14.dp)).clickable(onClick = onPick)
+            .padding(horizontal = 14.dp, vertical = 9.dp).testTag("add_more"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(stringResource(R.string.add_files_btn), fontSize = 12.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+            Icon(OldIcons.Plus, null, Modifier.size(16.dp))
+        }
+    }
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 6.dp, horizontal = 2.dp)) {
         itemsIndexed(st.items, key = { _, it -> it.info.id }) { i, it ->
             val on = i == st.current
-            Box(Modifier.width(188.dp)) {
-                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(cs.surface)
-                    .border(if (on) 2.dp else 1.5.dp, if (on) cs.primary else cs.outline, RoundedCornerShape(16.dp))
-                    .clickable { vm.select(i) }.padding(7.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Box(Modifier.size(52.dp).clip(RoundedCornerShape(11.dp)).background(cs.surfaceVariant)) {
-                        it.thumb?.let { b -> Image(b.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
-                    }
-                    Column(Modifier.weight(1f)) {
-                        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
-                            Text(it.info.name, fontSize = 12.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
-                        }
-                        Text(fmtBytes(it.info.sizeBytes) + when (it.info.kind) { MediaKind.VIDEO -> stringResource(R.string.kind_video); MediaKind.ANIM_GIF, MediaKind.ANIM_WEBP -> stringResource(R.string.kind_gif); else -> "" },
-                            fontSize = 11.sp, color = cs.onSurfaceVariant, maxLines = 1)
-                    }
+            val cutTag = st.global.sticker && it.info.durationMs > 10_000 && it.info.kind != MediaKind.IMAGE && it.info.kind != MediaKind.VIDEO
+            Box(Modifier.size(78.dp)) {
+                Box(Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp)).background(cs.surfaceVariant)
+                    .border(if (on) 2.dp else 1.dp, if (on) cs.primary else cs.outline, RoundedCornerShape(16.dp)).clickable { vm.select(i) }) {
+                    it.thumb?.let { b -> Image(b.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                    val badge = when (it.info.kind) { MediaKind.VIDEO -> stringResource(R.string.badge_video); MediaKind.ANIM_GIF, MediaKind.ANIM_WEBP -> stringResource(R.string.badge_gif); else -> stringResource(R.string.badge_image) }
+                    Text(badge, fontSize = 10.sp, color = Color.White, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                        modifier = Modifier.align(Alignment.BottomEnd).padding(5.dp).background(Color(0x99000000), RoundedCornerShape(7.dp)).padding(horizontal = 7.dp, vertical = 2.dp))
+                    if (cutTag) Text(stringResource(R.string.badge_cut), fontSize = 10.sp, color = Color(0xFF3A2A00), fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.TopStart).padding(5.dp).background(Tokens.Warn, RoundedCornerShape(7.dp)).padding(horizontal = 7.dp, vertical = 2.dp))
                 }
                 if (it.override != null) Box(Modifier.align(Alignment.TopEnd).padding(6.dp).size(9.dp).clip(androidx.compose.foundation.shape.CircleShape).background(cs.primary))
-                Box(Modifier.align(Alignment.TopEnd).offset(x = (-1).dp * 0 + 7.dp * -1, y = (-7).dp).size(24.dp).clip(androidx.compose.foundation.shape.CircleShape)
-                    .background(cs.surface).border(1.dp, cs.outline, androidx.compose.foundation.shape.CircleShape).clickable { vm.remove(i) }, contentAlignment = Alignment.Center) {
-                    Text("✕", fontSize = 11.sp, color = cs.onSurfaceVariant)
+                if (on) Box(Modifier.align(Alignment.TopEnd).offset(x = 6.dp, y = (-6).dp).size(22.dp).clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(cs.surface).border(1.dp, cs.outline, androidx.compose.foundation.shape.CircleShape).clickable { vm.remove(i) }.testTag("remove_item"), contentAlignment = Alignment.Center) {
+                    Text("✕", fontSize = 10.sp, color = cs.onSurfaceVariant)
                 }
             }
         }
         item {
-            Box(Modifier.width(76.dp).height(66.dp).clip(RoundedCornerShape(16.dp)).border(2.dp, cs.outline, RoundedCornerShape(16.dp)).clickable(onClick = onPick), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.add_tile), fontSize = 12.sp, color = cs.onSurfaceVariant, textAlign = TextAlign.Center)
+            Box(Modifier.size(78.dp).clip(RoundedCornerShape(16.dp)).border(1.5.dp, cs.outline, RoundedCornerShape(16.dp)).clickable(onClick = onPick), contentAlignment = Alignment.Center) {
+                Icon(OldIcons.Plus, null, Modifier.size(22.dp), tint = cs.onSurfaceVariant)
             }
         }
     }
@@ -194,10 +240,20 @@ fun FilmStrip(st: UiState, vm: MainViewModel, onPick: () -> Unit) {
 
 @Composable
 fun EditorTab(st: UiState, vm: MainViewModel, onPick: () -> Unit, onExport: (Boolean) -> Unit, onShare: (List<ResultEntry>) -> Unit) {
+    val cs = MaterialTheme.colorScheme
     val clock = rememberLoopClock(st.editing.mode == CreditMode.BLINK)
+    val isVideo = st.currentItem?.info?.kind == MediaKind.VIDEO && !st.global.transparent
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Pad), verticalArrangement = Arrangement.spacedBy(Gap)) {
-        Stage(st, vm, clock, false, onPick)
-        Transport(st, clock)
+        if (isVideo) {
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(cs.surface).border(1.dp, cs.outline, RoundedCornerShape(24.dp)).padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Stage(st, vm, clock, false, onPick)
+                SeekTransport(st, vm)
+            }
+        } else {
+            Stage(st, vm, clock, false, onPick)
+            Transport(st, clock)
+        }
         if (st.items.isNotEmpty()) FilmStrip(st, vm, onPick)
         Section("") {
             val cur = st.currentItem
@@ -215,39 +271,72 @@ fun EditorTab(st: UiState, vm: MainViewModel, onPick: () -> Unit, onExport: (Boo
                 OutlinedButton(onClick = vm::cancelExport, Modifier.fillMaxWidth()) { Text(stringResource(R.string.cancel)) }
             }
         }
-        if (st.results.isNotEmpty()) ResultsSection(st, vm, onShare)
         Spacer(Modifier.height(8.dp))
     }
 }
 
+// ------------------------------------------------------------------ results sheet
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ResultsSection(st: UiState, vm: MainViewModel, onShare: (List<ResultEntry>) -> Unit) {
-    Section(stringResource(R.string.results)) {
-        for (r in st.results) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(r.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
-                val o = r.output
-                if (o != null) {
-                    Text(stringResource(R.string.size_change, fmtBytes(r.srcSize), fmtBytes(o.size)), style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        if (o.overLimit) Pill(stringResource(R.string.over_limit_tag), Tokens.Warn)
-                        o.cut?.let { Pill(stringResource(R.string.cut_tag, it.first.toInt(), it.second.toInt()), Tokens.Warn) }
-                        r.savedTo?.let { Pill(stringResource(R.string.saved_in, it), Tokens.Ok) }
-                        r.error?.let { Pill(it, Tokens.Danger) }
+fun ResultsSheet(st: UiState, vm: MainViewModel, onShare: (List<ResultEntry>) -> Unit) {
+    if (!st.resultsSheet || st.results.isEmpty()) return
+    val cs = MaterialTheme.colorScheme
+    ModalBottomSheet(onDismissRequest = vm::closeResults, containerColor = cs.surface) {
+        val good = st.results.filter { it.output != null }
+        Column(Modifier.fillMaxWidth().padding(horizontal = Pad).padding(bottom = 22.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.results_title), style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.results_done, st.results.size), fontSize = 11.sp, color = cs.onSurfaceVariant)
+                }
+                Box(Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(cs.surfaceVariant).border(1.dp, cs.outline, RoundedCornerShape(13.dp))
+                    .clickable { vm.closeResults() }.testTag("results_close"), contentAlignment = Alignment.Center) { Text("✕", color = cs.onSurfaceVariant) }
+            }
+            if (st.results.any { it.savedTo != null }) {
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Tokens.Ok.copy(alpha = 0.10f)).border(1.5.dp, Tokens.Ok.copy(alpha = 0.6f), RoundedCornerShape(16.dp)).padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(Modifier.size(34.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Tokens.Ok), contentAlignment = Alignment.Center) { Icon(Icons.Default.Check, null, tint = Color(0xFF06281A)) }
+                    Column {
+                        Text(stringResource(R.string.results_saved), style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.results_saved_sub), fontSize = 11.sp, color = cs.onSurfaceVariant)
                     }
-                    TextButton(onClick = { onShare(listOf(r)) }) { Icon(Icons.Default.Share, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.share)) }
-                } else {
-                    Pill(r.error ?: "", Tokens.Danger)
-                    TextButton(onClick = { vm.retry(r.itemId) }) { Icon(Icons.Default.Refresh, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.retry)) }
                 }
             }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-        }
-        val good = st.results.filter { it.output != null }
-        if (good.size > 1) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { onShare(good) }, Modifier.weight(1f)) { Text(stringResource(R.string.share_all)) }
-            OutlinedButton(onClick = vm::saveZip, Modifier.weight(1f)) { Text(stringResource(R.string.save_zip)) }
+            Column(Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                for (r in st.results) {
+                    val src = st.items.firstOrNull { it.info.id == r.itemId }
+                    val o = r.output
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(cs.surfaceVariant.copy(alpha = 0.6f)).border(1.dp, cs.outline, RoundedCornerShape(16.dp)).padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Box(Modifier.size(54.dp).clip(RoundedCornerShape(12.dp)).background(cs.surface)) {
+                            src?.thumb?.let { b -> Image(b.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                        }
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
+                                Text(r.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
+                            }
+                            if (o != null) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text(fmtBytes(o.size), fontSize = 11.sp, color = cs.onSurfaceVariant)
+                                val kindLabel = when (src?.info?.kind) { MediaKind.VIDEO -> stringResource(R.string.badge_video); MediaKind.ANIM_GIF, MediaKind.ANIM_WEBP -> stringResource(R.string.badge_gif); else -> stringResource(R.string.badge_image) }
+                                InfoChip(kindLabel)
+                                o.cut?.let { Pill(stringResource(R.string.results_cut_tag, it.first.toInt(), it.second.toInt()), Tokens.Warn) }
+                                if (o.overLimit) Pill(stringResource(R.string.over_limit_tag), Tokens.Warn)
+                            } else Pill(r.error ?: "", Tokens.Danger)
+                            if (o != null) r.error?.let { Pill(it, Tokens.Danger) }
+                        }
+                        if (o != null) Box(Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(cs.surface).border(1.dp, cs.outline, RoundedCornerShape(13.dp))
+                            .clickable { onShare(listOf(r)) }, contentAlignment = Alignment.Center) { Icon(Icons.Default.Share, stringResource(R.string.share), Modifier.size(18.dp), tint = cs.primary) }
+                        else Box(Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(cs.surface).border(1.dp, cs.outline, RoundedCornerShape(13.dp))
+                            .clickable { vm.retry(r.itemId) }, contentAlignment = Alignment.Center) { Icon(Icons.Default.Refresh, stringResource(R.string.retry), Modifier.size(18.dp), tint = cs.primary) }
+                    }
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (good.size > 1) OutlinedButton(onClick = { onShare(good) }, Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.share_all)) }
+                Button(onClick = vm::closeResults, Modifier.weight(1f).height(48.dp).testTag("results_done"), shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = BtnBlue, contentColor = Color.White)) { Text(stringResource(R.string.done_btn), style = MaterialTheme.typography.titleMedium) }
+            }
+            if (good.size > 1) TextButton(onClick = vm::saveZip, Modifier.align(Alignment.CenterHorizontally)) { Text(stringResource(R.string.save_zip)) }
         }
     }
 }
@@ -260,6 +349,17 @@ fun CreditTab(st: UiState, vm: MainViewModel, onPick: () -> Unit) {
     val clock = rememberLoopClock(st.editing.mode == CreditMode.BLINK)
     val tr = st.global.transparent
     Column(Modifier.fillMaxSize()) {
+        val shown = st.currentItem?.info
+        val shownLabel = if (shown == null) stringResource(R.string.ts_no_file) else
+            (when (shown.kind) { MediaKind.VIDEO -> stringResource(R.string.badge_video); MediaKind.ANIM_GIF, MediaKind.ANIM_WEBP -> stringResource(R.string.badge_gif); else -> stringResource(R.string.badge_image) }) +
+                (if (shown.durationMs > 0) " · " + "%d:%02d".format((shown.durationMs / 1000) / 60, (shown.durationMs / 1000) % 60) else "")
+        TabTitle(stringResource(R.string.tab_credit), stringResource(R.string.ts_file_shown, shownLabel)) {
+            Row(Modifier.clip(RoundedCornerShape(12.dp)).background(cs.surface).border(1.dp, cs.outline, RoundedCornerShape(12.dp)).clickable { vm.resetDefaults() }
+                .padding(horizontal = 12.dp, vertical = 8.dp).testTag("reset_default"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(stringResource(R.string.reset_default_btn), fontSize = 11.5.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                Icon(OldIcons.Reset, null, Modifier.size(14.dp))
+            }
+        }
         Box(Modifier.padding(horizontal = Pad).padding(top = 4.dp, bottom = 8.dp)) { Stage(st, vm, clock, true, onPick) }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = Pad), verticalArrangement = Arrangement.spacedBy(Gap)) {
             Section(stringResource(R.string.h_text)) {
@@ -339,7 +439,9 @@ fun OutputTab(st: UiState, vm: MainViewModel) {
     val s = st.global
     val cs = MaterialTheme.colorScheme
     val tr = s.transparent
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Pad), verticalArrangement = Arrangement.spacedBy(Gap)) {
+    Column(Modifier.fillMaxSize()) {
+    TabTitle(stringResource(R.string.out_title), stringResource(R.string.out_title_sub))
+    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = Pad).padding(top = 6.dp), verticalArrangement = Arrangement.spacedBy(Gap)) {
         Section(stringResource(R.string.out_format)) {
             val fmts = listOf(
                 Triple(OutFormat.AUTO, stringResource(R.string.fmt_auto_t), stringResource(R.string.fmt_auto_sub)),
@@ -359,18 +461,28 @@ fun OutputTab(st: UiState, vm: MainViewModel) {
             Text(stringResource(hint), fontSize = 12.8.sp, color = cs.onSurfaceVariant, lineHeight = 21.sp)
         }
         Section(stringResource(R.string.h_size)) {
-            Segmented(listOf(SizeSel.ORIG to stringResource(R.string.size_orig), SizeSel.W1080 to "1080", SizeSel.W720 to "720", SizeSel.W540 to "540"), s.size) { v -> vm.edit { it.copy(size = v) } }
+            Segmented(listOf(SizeSel.ORIG to stringResource(R.string.size_orig), SizeSel.W1080 to "1080p", SizeSel.W720 to "720p", SizeSel.W540 to "540p"), s.size) { v -> vm.edit { it.copy(size = v) } }
         }
         if (st.items.any { it.info.kind == MediaKind.VIDEO } && !tr && !s.sticker)
-            Section("") { CheckRow(stringResource(R.string.audio_t), stringResource(R.string.audio_s), s.keepAudio) { v -> vm.edit { it.copy(keepAudio = v) } } }
+            Section("") { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                IconTile(OldIcons.Speaker)
+                Box(Modifier.weight(1f)) { CheckRow(stringResource(R.string.audio_t), stringResource(R.string.audio_s), s.keepAudio) { v -> vm.edit { it.copy(keepAudio = v) } } }
+            } }
         Section("") {
-            CheckRow(stringResource(R.string.stk_t), stringResource(R.string.stk_s), s.sticker) { v -> vm.edit { it.copy(sticker = v) } }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                IconTile(OldIcons.Sticker)
+                Box(Modifier.weight(1f)) { CheckRow(stringResource(R.string.stk_t), stringResource(R.string.stk_s), s.sticker) { v -> vm.edit { it.copy(sticker = v) } } }
+            }
+            HorizontalDivider(color = cs.outline)
             CheckRow(stringResource(R.string.crop_t), stringResource(R.string.crop_s), s.stickerCrop) { v -> vm.edit { it.copy(stickerCrop = v) } }
-            Text(stringResource(R.string.stk_hint), fontSize = 12.8.sp, color = cs.onSurfaceVariant, lineHeight = 21.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { InfoChip(stringResource(R.string.sticker_chip_static)); InfoChip(stringResource(R.string.sticker_chip_anim)); InfoChip(stringResource(R.string.sticker_chip_sec)) }
+            Row { InfoChip(stringResource(R.string.sticker_chip_webp)) }
+            Text(stringResource(R.string.stk_hint), fontSize = 11.5.sp, color = cs.onSurfaceVariant, lineHeight = 19.sp)
         }
         Text(stringResource(R.string.out_note), fontSize = 13.sp, color = cs.onSurfaceVariant, lineHeight = 22.sp,
             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(cs.surfaceVariant).border(1.dp, cs.outline, RoundedCornerShape(16.dp)).padding(horizontal = 14.dp, vertical = 12.dp))
         Spacer(Modifier.height(8.dp))
+    }
     }
 }
 
@@ -378,17 +490,23 @@ fun OutputTab(st: UiState, vm: MainViewModel) {
 @Composable
 fun SettingsTab(st: UiState, vm: MainViewModel, onLink: () -> Unit) {
     val cs = MaterialTheme.colorScheme
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Pad), verticalArrangement = Arrangement.spacedBy(Gap)) {
+    Column(Modifier.fillMaxSize()) {
+    TabTitle(stringResource(R.string.set_title))
+    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = Pad).padding(top = 6.dp), verticalArrangement = Arrangement.spacedBy(Gap)) {
         val u = st.update
         if (u is UpdateUi.Available || u is UpdateUi.Downloading || u is UpdateUi.Ready) {
             val ver = when (u) { is UpdateUi.Available -> u.info.versionName; is UpdateUi.Downloading -> u.info.versionName; is UpdateUi.Ready -> u.info.versionName; else -> "" }
-            Section("") {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(stringResource(R.string.upd_card_t), style = MaterialTheme.typography.titleMedium)
-                    Text(ver, fontSize = 12.8.sp, color = cs.onSurfaceVariant)
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(cs.surface).border(1.5.dp, cs.primary.copy(alpha = 0.55f), RoundedCornerShape(18.dp)).padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(Modifier.size(42.dp).clip(RoundedCornerShape(13.dp)).background(BtnBlue), contentAlignment = Alignment.Center) { Icon(OldIcons.Download, null, Modifier.size(22.dp), tint = Color.White) }
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.upd_card_t), style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.upd_card_sub, ver, st.version), fontSize = 11.sp, color = cs.onSurfaceVariant)
+                    }
                 }
-                Button(onClick = { vm.openUpdateSheet(true) }, Modifier.fillMaxWidth().height(48.dp), shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BtnBlue, contentColor = Color.White)) { Text(stringResource(R.string.upd_card_btn)) }
+                Button(onClick = { vm.openUpdateSheet(true) }, Modifier.fillMaxWidth().height(46.dp).testTag("upd_open"), shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = BtnBlue, contentColor = Color.White)) { Text(stringResource(R.string.upd_card_btn), style = MaterialTheme.typography.titleMedium) }
             }
         }
         Section(stringResource(R.string.set_appearance)) {
@@ -407,23 +525,24 @@ fun SettingsTab(st: UiState, vm: MainViewModel, onLink: () -> Unit) {
         }
         Section("") {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(Modifier.size(44.dp).clip(androidx.compose.foundation.shape.CircleShape).background(BtnBlue), contentAlignment = Alignment.Center) { Text("@", color = Color.White, style = MaterialTheme.typography.titleMedium) }
-                Column {
-                    Text(stringResource(R.string.about_t), fontSize = 15.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                    Text(stringResource(R.string.set_stamp_sub), fontSize = 12.8.sp, color = cs.onSurfaceVariant, lineHeight = 21.sp)
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.about_t), style = MaterialTheme.typography.titleMedium)
+                    Text(st.version, fontSize = 11.sp, color = cs.onSurfaceVariant)
                 }
+                Box(Modifier.size(42.dp).clip(androidx.compose.foundation.shape.CircleShape).background(BtnBlue), contentAlignment = Alignment.Center) { Text("@", color = Color.White, style = MaterialTheme.typography.titleMedium) }
             }
         }
-        Column(Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
-                Row(Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(50)).background(cs.surface).border(1.dp, cs.outline, androidx.compose.foundation.shape.RoundedCornerShape(50))
-                    .clickable(onClick = onLink).padding(horizontal = 18.dp, vertical = 12.dp).testTag("wa_link"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Icon(OldIcons.Chat, null, Modifier.size(20.dp), tint = Color(0xFF1FA855))
-                    Text(stringResource(R.string.wa_handle), fontSize = 16.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
-                }
+        Spacer(Modifier.height(28.dp))
+        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
+            Row(Modifier.fillMaxWidth().clickable(onClick = onLink).padding(vertical = 12.dp).testTag("wa_link"), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                Icon(OldIcons.Chat, null, Modifier.size(15.dp), tint = cs.onSurfaceVariant)
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.wa_handle), fontSize = 12.5.sp, color = cs.primary, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.design_by), fontSize = 11.5.sp, color = cs.onSurfaceVariant)
             }
-            Text(stringResource(R.string.wa_note), fontSize = 12.5.sp, color = cs.onSurfaceVariant)
         }
+    }
     }
 }
 
@@ -436,12 +555,29 @@ fun UpdateSheet(st: UiState, vm: MainViewModel, onInstall: () -> Unit) {
         Column(Modifier.fillMaxWidth().padding(horizontal = Pad).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(Gap)) {
             when (val u = st.update) {
                 is UpdateUi.Available -> {
-                    Text(stringResource(R.string.upd_available), style = MaterialTheme.typography.titleLarge)
-                    Text(u.info.versionName + if (u.info.size > 0) " · " + fmtBytes(u.info.size) else "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    u.info.notes.forEach { Text("• $it", style = MaterialTheme.typography.bodyMedium) }
+                    val cs2 = MaterialTheme.colorScheme
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(R.string.upd_available), style = MaterialTheme.typography.titleLarge)
+                            Text((if (u.info.size > 0) fmtBytes(u.info.size) + " · " else "") + u.info.versionName + " ← " + st.version, fontSize = 11.sp, color = cs2.onSurfaceVariant)
+                        }
+                        Box(Modifier.size(46.dp).clip(RoundedCornerShape(14.dp)).background(cs2.primaryContainer), contentAlignment = Alignment.Center) {
+                            Box(Modifier.size(34.dp).clip(androidx.compose.foundation.shape.CircleShape).background(BtnBlue), contentAlignment = Alignment.Center) { Text("@", color = Color.White, style = MaterialTheme.typography.titleMedium) }
+                        }
+                    }
+                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(cs2.surfaceVariant.copy(alpha = 0.6f)).border(1.dp, cs2.outline, RoundedCornerShape(16.dp)).padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(stringResource(R.string.whats_new), fontSize = 11.5.sp, color = cs2.onSurfaceVariant, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                        u.info.notes.forEach { n ->
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Box(Modifier.size(6.dp).clip(androidx.compose.foundation.shape.CircleShape).background(cs2.primary))
+                                Text(n, style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = vm::skipUpdate, Modifier.weight(1f)) { Text(stringResource(R.string.upd_later)) }
-                        Button(onClick = vm::downloadUpdate, Modifier.weight(1f).testTag("upd_go")) { Text(stringResource(R.string.upd_go)) }
+                        OutlinedButton(onClick = vm::skipUpdate, Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.upd_later)) }
+                        Button(onClick = vm::downloadUpdate, Modifier.weight(1f).height(48.dp).testTag("upd_go"), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = BtnBlue, contentColor = Color.White)) { Text(stringResource(R.string.upd_go)) }
                     }
                 }
                 is UpdateUi.Downloading -> {

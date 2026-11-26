@@ -48,7 +48,7 @@ class DataInstrumentedTest {
     @Test fun settingsPersistAndMoveOffsetDoesNot() = runBlocking {
         val repo = SettingsRepository(ctx)
         repo.reset()
-        val s = StampSettings(text = "@x", corner = Corner.TR, widthPct = 30, marginPct = 5, opacity = 80, shadow = 40, white = false, bold = true,
+        val s = StampSettings(text = "@x", corner = Corner.TR, widthPct = 30, marginPct = 5f, opacity = 80, shadow = 40, white = false, bold = true,
             mode = CreditMode.BLINK, format = OutFormat.GIF, size = SizeSel.W720, keepAudio = false, stickerCrop = false, dx = 12f, dy = -7f)
         repo.save(s)
         val back = repo.load()

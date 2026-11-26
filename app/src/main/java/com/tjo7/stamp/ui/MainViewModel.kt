@@ -44,6 +44,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var updateJob: Job? = null
     private var base: Bitmap? = null
     private var baseId = -1L
+    private var sample: Bitmap? = null
     private var checkedOnce = false
 
     init {
@@ -159,12 +160,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     if (item != null && (baseId != item.info.id || base == null)) {
                         base = SourceLoader.previewFrame(ctx, item.info, 1080); baseId = item.info.id
                     }
-                    if (item == null) { base = null; baseId = -1 }
-                    val show = if (s.mode == CreditMode.BLINK) st.previewShow else true
-                    engine.previewRender(if (s.transparent) null else base, s, show)
+                    if (item == null) { if (sample == null) sample = com.tjo7.stamp.media.SampleImage.make(); base = sample; baseId = -1 }
+                    val b = if (s.transparent) null else base
+                    val on = engine.previewRender(b, s, true)
+                    val off = if (s.mode == CreditMode.BLINK) engine.previewRender(b, s, false) else null
+                    on to off
                 } catch (e: Exception) { null }
             }
-            _ui.update { it.copy(preview = bmp) }
+            _ui.update { it.copy(preview = bmp?.first, previewOff = bmp?.second, isSample = item == null) }
         }
     }
 

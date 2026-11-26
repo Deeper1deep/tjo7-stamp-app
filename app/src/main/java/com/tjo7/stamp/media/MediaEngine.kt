@@ -117,10 +117,10 @@ class MediaEngine(private val ctx: Context, val renderer: StampRenderer) {
             val check: () -> Unit = { job?.ensureActive() }
             try {
                 when {
-                    fmt == OutFormat.MP4 && info.kind == MediaKind.VIDEO && !s.transparent -> {
+                    (fmt == OutFormat.MP4 || fmt == OutFormat.WEBM) && info.kind == MediaKind.VIDEO && !s.transparent -> {
                         val (w, h) = frameDims(info, s, null, true)
-                        val f = outFile(info, "mp4")
-                        videoExporter.export(info, s, w and -2, h and -2, f, onProgress)
+                        val f = outFile(info, fmt.ext)
+                        videoExporter.export(info, s, w and -2, h and -2, f, fmt == OutFormat.WEBM, onProgress)
                         ExportOutput(f, f.name, fmt, null, 0)
                     }
                     fmt == OutFormat.GIF -> exportGif(info, s, box, onProgress, check)
@@ -149,7 +149,7 @@ class MediaEngine(private val ctx: Context, val renderer: StampRenderer) {
     private fun exportStill(
         info: SourceInfo, s: StampSettings, fmt0: OutFormat, box: IntArray?, onProgress: (Float) -> Unit, check: () -> Unit,
     ): ExportOutput {
-        val fmt = if (fmt0 == OutFormat.MP4 || fmt0 == OutFormat.GIF) OutFormat.PNG else fmt0
+        val fmt = if (fmt0 == OutFormat.MP4 || fmt0 == OutFormat.WEBM || fmt0 == OutFormat.GIF) OutFormat.PNG else fmt0
         val src: Bitmap? = if (s.transparent) null else {
             if (info.kind == MediaKind.IMAGE) SourceLoader.decodeStill(ctx, info) else SourceLoader.previewFrame(ctx, info, 0)
         }

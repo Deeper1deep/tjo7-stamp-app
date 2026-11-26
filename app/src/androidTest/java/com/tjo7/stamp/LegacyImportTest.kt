@@ -40,7 +40,7 @@ class LegacyImportTest {
         repo.importLegacy(legacy)
         val s = repo.load()
         assertEquals("@old", s.text); assertEquals(Corner.TR, s.corner); assertEquals(30, s.widthPct)
-        assertEquals(5, s.marginPct); assertEquals(80, s.opacity); assertEquals(40, s.shadow)
+        assertEquals(5f, s.marginPct, 0f); assertEquals(80, s.opacity); assertEquals(40, s.shadow)
         assertTrue(s.bold); assertFalse(s.white); assertEquals(CreditMode.BLINK, s.mode)
         assertEquals(SizeSel.W720, s.size); assertFalse(s.keepAudio); assertFalse(s.stickerCrop)
         assertTrue(repo.legacyDone())

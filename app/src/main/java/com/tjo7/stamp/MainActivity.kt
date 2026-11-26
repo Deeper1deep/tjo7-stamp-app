@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
@@ -75,16 +77,17 @@ class MainActivity : ComponentActivity() {
                             ) { requestExport(st.items.size > 1 && !st.global.transparent) }
                             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                                 val tabs = listOf(
-                                    Triple(Tab.EDITOR, R.string.tab_editor, Icons.Default.Home),
-                                    Triple(Tab.CREDIT, R.string.tab_credit, Icons.Default.Edit),
-                                    Triple(Tab.OUTPUT, R.string.tab_output, Icons.Default.Share),
-                                    Triple(Tab.SETTINGS, R.string.tab_settings, Icons.Default.Settings),
+                                    Triple(Tab.EDITOR, R.string.tab_editor, OldIcons.Editor),
+                                    Triple(Tab.CREDIT, R.string.tab_credit, OldIcons.Credit),
+                                    Triple(Tab.OUTPUT, R.string.tab_output, OldIcons.Output),
+                                    Triple(Tab.SETTINGS, R.string.tab_settings, OldIcons.Settings),
                                 )
                                 for ((t, label, icon) in tabs) NavigationBarItem(
                                     selected = st.tab == t, onClick = { vm.setTab(t) },
                                     modifier = Modifier.testTag("tab_" + t.name.lowercase()),
+                                    colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.primary, selectedTextColor = MaterialTheme.colorScheme.primary, indicatorColor = MaterialTheme.colorScheme.primaryContainer, unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant, unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant),
                                     icon = {
-                                        BadgedBox(badge = { if (t == Tab.SETTINGS && st.update is UpdateUi.Available) Badge() }) { Icon(icon, null) }
+                                        BadgedBox(badge = { if (t == Tab.SETTINGS && st.update is UpdateUi.Available) Badge(containerColor = androidx.compose.ui.graphics.Color(0xFFF2BD69)) }) { Icon(icon, null, Modifier.size(22.dp)) }
                                     },
                                     label = { Text(stringResource(label)) },
                                 )
@@ -98,7 +101,7 @@ class MainActivity : ComponentActivity() {
                                     onPick = { picker.launch(arrayOf("image/*", "video/*", "application/zip", "application/octet-stream", "application/x-zip-compressed")) },
                                     onExport = { requestExport(it) },
                                     onShare = { e -> vm.shareIntent(e)?.let { startActivity(it) } })
-                                Tab.CREDIT -> CreditTab(st, vm)
+                                Tab.CREDIT -> CreditTab(st, vm, onPick = { picker.launch(arrayOf("image/*", "video/*", "application/zip", "application/octet-stream", "application/x-zip-compressed")) })
                                 Tab.OUTPUT -> OutputTab(st, vm)
                                 Tab.SETTINGS -> SettingsTab(st, vm) { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/qr/BTFMWNAXQXM3L1"))) }
                             }

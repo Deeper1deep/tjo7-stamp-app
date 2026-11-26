@@ -7,25 +7,25 @@ import org.junit.Test
 class DomainTest {
     @Test fun defaultsMatchTheOldApp() {
         val s = StampSettings()
-        assertEquals("@t.jo7", s.text); assertEquals(Corner.BL, s.corner); assertEquals(13, s.widthPct); assertEquals(2, s.marginPct)
+        assertEquals("@t.jo7", s.text); assertEquals(Corner.BL, s.corner); assertEquals(13, s.widthPct); assertEquals(2f, s.marginPct, 0f)
         assertEquals(55, s.opacity); assertEquals(0, s.shadow); assertTrue(s.white); assertEquals(CreditMode.STATIC, s.mode)
         assertEquals(0f, s.dx, 0f); assertEquals(OutFormat.AUTO, s.format); assertEquals(SizeSel.ORIG, s.size); assertTrue(s.keepAudio)
     }
 
     @Test fun presets() {
         val b = StampSettings().applyPreset(Preset.BLINK)
-        assertEquals(CreditMode.BLINK, b.mode); assertEquals(24, b.widthPct); assertEquals(3, b.marginPct); assertEquals(100, b.opacity); assertTrue(b.bold)
+        assertEquals(CreditMode.BLINK, b.mode); assertEquals(24, b.widthPct); assertEquals(3f, b.marginPct, 0f); assertEquals(100, b.opacity); assertTrue(b.bold)
         val c = b.applyPreset(Preset.CREDIT)
         assertEquals(CreditMode.STATIC, c.mode); assertEquals(13, c.widthPct); assertEquals(55, c.opacity); assertFalse(c.bold)
     }
 
     @Test fun sanitizeClamps() {
-        val s = StampSettings(text = "x".repeat(200), widthPct = 900, marginPct = -5, opacity = 500, shadow = -1, dx = 999f).sanitized()
-        assertEquals(60, s.text.length); assertEquals(100, s.widthPct); assertEquals(0, s.marginPct); assertEquals(100, s.opacity); assertEquals(0, s.shadow); assertEquals(100f, s.dx, 0f)
+        val s = StampSettings(text = "x".repeat(200), widthPct = 900, marginPct = -5f, opacity = 500, shadow = -1, dx = 999f).sanitized()
+        assertEquals(60, s.text.length); assertEquals(100, s.widthPct); assertEquals(0f, s.marginPct, 0f); assertEquals(100, s.opacity); assertEquals(0, s.shadow); assertEquals(100f, s.dx, 0f)
     }
 
-    @Test fun legacyWebmMapsToMp4() {
-        assertEquals(OutFormat.MP4, OutFormat.fromLegacy("webm")); assertEquals(OutFormat.GIF, OutFormat.fromLegacy("gif")); assertNull(OutFormat.fromLegacy("bogus"))
+    @Test fun legacyWebmStaysWebm() {
+        assertEquals(OutFormat.WEBM, OutFormat.fromLegacy("webm")); assertEquals(OutFormat.GIF, OutFormat.fromLegacy("gif")); assertNull(OutFormat.fromLegacy("bogus"))
     }
 
     @Test fun blinkShowsInSecondSecondOfThree() {
@@ -45,7 +45,7 @@ class DomainTest {
 
     @Test fun placementCornersAndClamp() {
         val m = TextMetricsPx(100f, 20f, 5f)
-        val s = StampSettings(widthPct = 10, marginPct = 2)
+        val s = StampSettings(widthPct = 10, marginPct = 2f)
         val fs = 30f
         val bl = StampGeometry.place(1000, 500, s.copy(corner = Corner.BL), m, fs, false)
         assertEquals(20f, bl.x, 0.01f); assertEquals(500f - 20f - 5f, bl.y, 0.01f)

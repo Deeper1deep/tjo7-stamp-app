@@ -31,6 +31,8 @@ data class UiState(
     val current: Int = 0,
     val global: StampSettings = StampSettings(),
     val preview: Bitmap? = null,
+    val previewOff: Bitmap? = null,
+    val isSample: Boolean = false,
     val previewShow: Boolean = true,
     val previewLoading: Boolean = false,
     val busy: Boolean = false,

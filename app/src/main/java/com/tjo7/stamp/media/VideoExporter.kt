@@ -44,7 +44,7 @@ class VideoExporter(private val ctx: Context, private val renderer: StampRendere
             if (creditVisibleAt(mode, presentationTimeUs / 1_000_000.0)) shown else hidden
     }
 
-    suspend fun export(info: SourceInfo, s: StampSettings, w: Int, h: Int, outFile: File, onProgress: (Float) -> Unit) {
+    suspend fun export(info: SourceInfo, s: StampSettings, w: Int, h: Int, outFile: File, webm: Boolean = false, onProgress: (Float) -> Unit) {
         val shown = renderer.creditLayer(w, h, s)
         val hidden = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val overlay = CreditOverlay(shown, hidden, s.mode)
@@ -73,8 +73,9 @@ class VideoExporter(private val ctx: Context, private val renderer: StampRendere
                         }
                     }
                     val transformer = Transformer.Builder(ctx)
-                        .setVideoMimeType(MimeTypes.VIDEO_H264)
-                        .setAudioMimeType(MimeTypes.AUDIO_AAC)
+                        .setVideoMimeType(if (webm) MimeTypes.VIDEO_VP9 else MimeTypes.VIDEO_H264)
+                        .setAudioMimeType(if (webm) MimeTypes.AUDIO_OPUS else MimeTypes.AUDIO_AAC)
+                        .apply { if (webm) setMuxerFactory(WebmMuxer.Factory(!(!s.keepAudio || !info.hasAudio))) }
                         .setEncoderFactory(encoderFactory)
                         .addListener(listener)
                         .build()

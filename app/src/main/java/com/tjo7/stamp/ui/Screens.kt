@@ -38,9 +38,11 @@ import com.tjo7.stamp.domain.*
 
 /** Seconds on the 0-3s preview loop; the credit blinks against it. */
 @Composable
-private fun rememberLoopClock(): State<Float> {
+private fun rememberLoopClock(active: Boolean): State<Float> {
     val t = remember { mutableStateOf(0f) }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(active) {
+        t.value = 0f
+        if (!active) return@LaunchedEffect
         val t0 = androidx.compose.runtime.withFrameNanos { it }
         while (true) {
             val now = androidx.compose.runtime.withFrameNanos { it }
@@ -192,7 +194,7 @@ fun FilmStrip(st: UiState, vm: MainViewModel, onPick: () -> Unit) {
 
 @Composable
 fun EditorTab(st: UiState, vm: MainViewModel, onPick: () -> Unit, onExport: (Boolean) -> Unit, onShare: (List<ResultEntry>) -> Unit) {
-    val clock = rememberLoopClock()
+    val clock = rememberLoopClock(st.editing.mode == CreditMode.BLINK)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Pad), verticalArrangement = Arrangement.spacedBy(Gap)) {
         Stage(st, vm, clock, false, onPick)
         Transport(st, clock)
@@ -255,7 +257,7 @@ private fun ResultsSection(st: UiState, vm: MainViewModel, onShare: (List<Result
 fun CreditTab(st: UiState, vm: MainViewModel, onPick: () -> Unit) {
     val s = st.editing
     val cs = MaterialTheme.colorScheme
-    val clock = rememberLoopClock()
+    val clock = rememberLoopClock(st.editing.mode == CreditMode.BLINK)
     val tr = st.global.transparent
     Column(Modifier.fillMaxSize()) {
         Box(Modifier.padding(horizontal = Pad).padding(top = 4.dp, bottom = 8.dp)) { Stage(st, vm, clock, true, onPick) }

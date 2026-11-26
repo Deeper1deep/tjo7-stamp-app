@@ -317,7 +317,7 @@ fun ResultsSheet(st: UiState, vm: MainViewModel, onShare: (List<ResultEntry>) ->
                                 Text(r.name, style = MaterialTheme.typography.titleMedium, fontSize = 13.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
                             }
                             if (o != null) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(fmtBytes(o.size), fontSize = 11.sp, color = cs.onSurfaceVariant)
+                                Text("\u2066" + fmtBytes(o.size) + "\u2069", fontSize = 11.sp, color = cs.onSurfaceVariant)
                                 val kindLabel = when (src?.info?.kind) { MediaKind.VIDEO -> stringResource(R.string.badge_video); MediaKind.ANIM_GIF, MediaKind.ANIM_WEBP -> stringResource(R.string.badge_gif); else -> stringResource(R.string.badge_image) }
                                 InfoChip(kindLabel)
                                 o.cut?.let { Pill(stringResource(R.string.results_cut_tag, it.first.toInt(), it.second.toInt()), Tokens.Warn) }
@@ -560,7 +560,7 @@ fun UpdateSheet(st: UiState, vm: MainViewModel, onInstall: () -> Unit) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Column(Modifier.weight(1f)) {
                             Text(stringResource(R.string.upd_available), style = MaterialTheme.typography.titleLarge)
-                            Text((if (u.info.size > 0) fmtBytes(u.info.size) + " · " else "") + u.info.versionName + " ← " + st.version, fontSize = 11.sp, color = cs2.onSurfaceVariant)
+                            Text("\u2066" + (if (u.info.size > 0) fmtBytes(u.info.size) + " · " else "") + u.info.versionName + " ← " + st.version + "\u2069", fontSize = 11.sp, color = cs2.onSurfaceVariant)
                         }
                         Box(Modifier.size(46.dp).clip(RoundedCornerShape(14.dp)).background(cs2.primaryContainer), contentAlignment = Alignment.Center) {
                             Box(Modifier.size(34.dp).clip(androidx.compose.foundation.shape.CircleShape).background(BtnBlue), contentAlignment = Alignment.Center) { Text("@", color = Color.White, style = MaterialTheme.typography.titleMedium) }

@@ -112,7 +112,7 @@ class ScreenshotTest {
         }
         tap("tab_settings")
         rule.runOnUiThread { vm.openUpdateSheet(true) }
-        for (k in 0 until 6) { Thread.sleep(300); rule.mainClock.advanceTimeBy(300) }
+        for (k in 0 until 12) { Thread.sleep(300); rule.mainClock.advanceTimeBy(300) }
         shot("pop_dark_update_sheet")
         rule.runOnUiThread { vm.openUpdateSheet(false) }
         tap("tab_editor")

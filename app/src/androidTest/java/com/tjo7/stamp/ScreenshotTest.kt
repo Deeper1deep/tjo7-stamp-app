@@ -111,4 +111,22 @@ class ScreenshotTest {
         for (k in 0 until 6) { Thread.sleep(300); rule.mainClock.advanceTimeBy(300) }
         shot("pop_dark_results")
     }
+
+    /** Press play on a GIF and on a video: the position must advance by itself (timer-driven), and the shown frame must change. */
+    @Test fun playButtonAdvancesGifAndVideo() {
+        rule.mainClock.autoAdvance = false
+        rule.mainClock.advanceTimeBy(1000)
+        clearSheet("p")
+        for (name in listOf("land.gif", "land.mp4")) {
+            rule.runOnUiThread { vm.importUris(listOf(android.net.Uri.fromFile(Support.asset(name, "play_$name"))), false) }
+            for (k in 0 until 24) { Thread.sleep(250); rule.mainClock.advanceTimeBy(100) }
+            clearSheet("p2")
+            val start = vm.ui.value.seekMs
+            rule.onNodeWithTag("play_btn").performClick()
+            for (k in 0 until 14) { Thread.sleep(300); rule.mainClock.advanceTimeBy(300) }
+            val now = vm.ui.value.seekMs
+            org.junit.Assert.assertTrue("$name position advanced by itself: $start -> $now", now > start + 400)
+            rule.onNodeWithTag("play_btn").performClick()
+        }
+    }
 }

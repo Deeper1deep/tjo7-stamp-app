@@ -1,0 +1,4 @@
+# Signing material - restored from repo secrets by CI (build-apk.yml)
+signing/*.keystore
+signing/*.jks
+signing/*.properties

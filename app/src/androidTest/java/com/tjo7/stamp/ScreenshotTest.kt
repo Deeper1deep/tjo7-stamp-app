@@ -8,6 +8,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
 import org.junit.Test
@@ -92,6 +94,14 @@ class ScreenshotTest {
             tap("tab_$t")
             if (t == "credit") rule.runOnUiThread { vm.setMove(true) }
             shot("pop_dark_$t")
+            if (t != "editor") {
+                // scroll state: swipe the content up twice and photograph what is below the fold
+                for (n in 1..2) {
+                    rule.onRoot().performTouchInput { swipe(androidx.compose.ui.geometry.Offset(width / 2f, height * 0.78f), androidx.compose.ui.geometry.Offset(width / 2f, height * 0.12f), 300) }
+                    rule.mainClock.advanceTimeBy(600)
+                    shot("pop_dark_${t}_scroll$n")
+                }
+            }
         }
         tap("tab_editor")
         tap("save_btn")

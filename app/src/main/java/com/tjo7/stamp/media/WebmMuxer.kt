@@ -17,6 +17,7 @@ import java.io.IOException
 import java.nio.ByteBuffer
 
 /** Media3 [Muxer] that writes WebM (VP8/VP9 + Opus/Vorbis) through the platform MediaMuxer. */
+@androidx.annotation.OptIn(UnstableApi::class)
 class WebmMuxer private constructor(private val mm: MediaMuxer) : Muxer {
     private class Token(val index: Int) : Muxer.TrackToken
     private var started = false
@@ -24,6 +25,7 @@ class WebmMuxer private constructor(private val mm: MediaMuxer) : Muxer {
     private var expected = 1
     private var added = 0
 
+    @androidx.annotation.OptIn(UnstableApi::class)
     class Factory(private val withAudio: Boolean) : Muxer.Factory {
         override fun create(path: String): Muxer = try {
             WebmMuxer(MediaMuxer(path, MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM)).also { it.expected = if (withAudio) 2 else 1 }

@@ -208,4 +208,14 @@ class MediaEngineInstrumentedTest {
         val b64 = android.util.Base64.encodeToString(o.file.readBytes(), android.util.Base64.NO_WRAP)
         b64.chunked(2000).forEachIndexed { i, c -> android.util.Log.i("EXPORTB64", "%05d %s".format(i, c)) }
     }
+
+    @Test fun gifSeekShowsDifferentFrames() {
+        val info = Support.probe(Support.asset("land.gif"))
+        assertTrue(info.kind == com.tjo7.stamp.domain.MediaKind.ANIM_GIF)
+        val a = SourceLoader.previewFrame(Support.target, info, 0, 0L)
+        val b = SourceLoader.previewFrame(Support.target, info, 0, info.durationMs - 100)
+        val pa = IntArray(a.width * a.height); a.getPixels(pa, 0, a.width, 0, 0, a.width, a.height)
+        val pb = IntArray(b.width * b.height); b.getPixels(pb, 0, b.width, 0, 0, b.width, b.height)
+        assertTrue("frames at start and end differ", !pa.contentEquals(pb))
+    }
 }

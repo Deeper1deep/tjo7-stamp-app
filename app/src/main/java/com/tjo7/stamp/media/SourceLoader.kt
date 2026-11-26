@@ -259,6 +259,11 @@ object SourceLoader {
         }
         else -> {
             var first: Bitmap? = null
+            if (atMs >= 0) {
+                // animated GIF / WebP: the last frame that has started by atMs
+                val at = atMs / 1000.0
+                forEachFrame(ctx, info, 1e9, 1.0, maxSide) { b, start, _ -> if (first != null && start > at) false else { first = b.copy(Bitmap.Config.ARGB_8888, false); true } }
+            } else
             forEachFrame(ctx, info, 1.0, 1.0, maxSide) { b, _, _ -> first = b.copy(Bitmap.Config.ARGB_8888, false); false }
             downscale(first ?: throw UnsupportedMediaException("frame"), maxSide)
         }

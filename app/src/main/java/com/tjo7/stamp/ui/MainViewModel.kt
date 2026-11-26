@@ -160,7 +160,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val s = st.effective(item)
             val bmp = withContext(Dispatchers.Default) {
                 try {
-                    val seekNow = if (item != null && item.info.kind == MediaKind.VIDEO) st.seekMs else -1L
+                    val seekNow = if (item != null && item.info.kind != MediaKind.IMAGE) st.seekMs else -1L
                     if (item != null && (baseId != item.info.id || base == null || baseSeek != seekNow)) {
                         base = SourceLoader.previewFrame(ctx, item.info, 1080, seekNow); baseId = item.info.id; baseSeek = seekNow
                     }

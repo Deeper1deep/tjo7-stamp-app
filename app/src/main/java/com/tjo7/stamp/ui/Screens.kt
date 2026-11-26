@@ -241,7 +241,7 @@ fun FilmStrip(st: UiState, vm: MainViewModel, onPick: () -> Unit) {
 fun EditorTab(st: UiState, vm: MainViewModel, onPick: () -> Unit, onExport: (Boolean) -> Unit, onShare: (List<ResultEntry>) -> Unit) {
     val cs = MaterialTheme.colorScheme
     val clock = rememberLoopClock(st.editing.mode == CreditMode.BLINK)
-    val isVideo = st.currentItem?.info?.kind == MediaKind.VIDEO && !st.global.transparent
+    val isVideo = st.currentItem?.info?.kind.let { it != null && it != MediaKind.IMAGE } && !st.global.transparent
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Pad), verticalArrangement = Arrangement.spacedBy(Gap)) {
         if (isVideo) {
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(Color(0xFF05060D)).border(1.dp, cs.outline.copy(alpha = 0.6f), RoundedCornerShape(24.dp)).padding(8.dp),

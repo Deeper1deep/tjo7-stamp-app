@@ -6,6 +6,7 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
@@ -85,10 +86,13 @@ class ScreenshotTest {
         clearSheet("b")
         if (!isDark()) tap("theme_toggle")
         rule.runOnUiThread { vm.edit { com.tjo7.stamp.domain.StampSettings() } }  // factory settings, same as the reference screenshots
-        val files = listOf(Support.asset("land.mp4", "p.mp4"), Support.asset("land.png", "p.png"), Support.asset("land.gif", "p.gif"), Support.asset("sample.png", "q.png"))
+        val files = listOf(Support.asset("land.mp4", "p.mp4"), Support.asset("land.png", "p.png"), Support.asset("long20.gif", "p.gif"), Support.asset("sample.png", "q.png"))
         rule.runOnUiThread { vm.importUris(files.map { android.net.Uri.fromFile(it) }, false) }
         // Import and preview run on background dispatchers; give them real time and let the frozen clock tick between polls.
         for (k in 0 until 40) { Thread.sleep(250); rule.mainClock.advanceTimeBy(100) }
+        rule.onNodeWithTag("cut_badge").assertExists()   // 20 s GIF with Auto/GIF output is flagged as trimmed
+        val upd = com.tjo7.stamp.data.UpdateInfo(100, "v8", 12_400_000L, listOf("تصميم جديد للتطبيق بتبويبات واضحة", "تحريك الحقوق بالأسهم أو بالسحب", "تحديث التطبيق من جواه من غير ما تمسح القديم"), "https://example.invalid/x.apk", null)
+        rule.runOnUiThread { vm.previewUpdateCard(upd) }
         for (t in listOf("editor", "credit", "output", "settings")) {
             clearSheet(t)
             tap("tab_$t")
@@ -103,8 +107,11 @@ class ScreenshotTest {
                 }
             }
         }
-        rule.runOnUiThread { vm.previewUpdateCard(com.tjo7.stamp.data.UpdateInfo(100, "v8", 9_500_000L, listOf("x"), "https://example.invalid/x.apk", null)) }
-        tap("tab_settings"); shot("pop_dark_settings_update")
+        tap("tab_settings")
+        rule.runOnUiThread { vm.openUpdateSheet(true) }
+        for (k in 0 until 6) { Thread.sleep(300); rule.mainClock.advanceTimeBy(300) }
+        shot("pop_dark_update_sheet")
+        rule.runOnUiThread { vm.openUpdateSheet(false) }
         tap("tab_editor")
         tap("save_btn")
         for (k in 0 until 120) { Thread.sleep(500); rule.mainClock.advanceTimeBy(100); if (vm.ui.value.resultsSheet) break }

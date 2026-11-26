@@ -58,5 +58,9 @@ private fun type(): Typography {
 
 @Composable
 fun Tjo7Theme(dark: Boolean = true, content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = if (dark) Dark else Light, typography = type(), content = content)
+    val d = androidx.compose.ui.platform.LocalDensity.current
+    // The old web UI's text ran about 12% larger than the first Compose port at the same screen width.
+    androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(d.density, d.fontScale * 1.12f)) {
+        MaterialTheme(colorScheme = if (dark) Dark else Light, typography = type(), content = content)
+    }
 }

@@ -57,13 +57,13 @@ private fun rememberLoopClock(active: Boolean): State<Float> {
 fun Stage(st: UiState, vm: MainViewModel, clock: State<Float>, compact: Boolean, onPick: () -> Unit) {
     val cs = MaterialTheme.colorScheme
     val screenH = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp
-    val maxH = (screenH * (if (compact) 0.18f else 0.34f)).dp
+    val maxH = (screenH * (if (compact) 0.24f else 0.56f)).dp.coerceAtMost(560.dp)
     val stageBg = Color(0xFF05060D)
     val on = st.preview
     val showOn = st.editing.mode != CreditMode.BLINK || creditVisibleAt(CreditMode.BLINK, clock.value.toDouble())
     val bmp = if (showOn) on else (st.previewOff ?: on)
     val empty = st.items.isEmpty()
-    Box(Modifier.fillMaxWidth().heightIn(min = if (compact) 0.dp else 250.dp).clip(RoundedCornerShape(if (compact) 22.dp else 24.dp)).background(stageBg)
+    Box(Modifier.fillMaxWidth().heightIn(min = if (compact) 0.dp else 260.dp).clip(RoundedCornerShape(if (compact) 22.dp else 24.dp)).background(stageBg)
         .padding(if (compact) 8.dp else 10.dp), contentAlignment = Alignment.Center) {
         if (bmp != null) {
             BoxWithConstraints(Modifier.fillMaxWidth().heightIn(max = maxH), contentAlignment = Alignment.Center) {
@@ -211,7 +211,9 @@ fun FilmStrip(st: UiState, vm: MainViewModel, onPick: () -> Unit) {
     LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 6.dp, horizontal = 2.dp)) {
         itemsIndexed(st.items, key = { _, it -> it.info.id }) { i, it ->
             val on = i == st.current
-            val cutTag = st.global.sticker && it.info.durationMs > 10_000 && it.info.kind != MediaKind.IMAGE && it.info.kind != MediaKind.VIDEO
+            val anim = it.info.kind == MediaKind.ANIM_GIF || it.info.kind == MediaKind.ANIM_WEBP
+            val gifOut = st.global.format == OutFormat.GIF || (st.global.format == OutFormat.AUTO && it.info.kind == MediaKind.ANIM_GIF)
+            val cutTag = !st.global.transparent && it.info.kind != MediaKind.IMAGE && ((st.global.sticker && it.info.durationMs > 10_000 && anim) || (gifOut && it.info.durationMs > 15_300))
             Box(Modifier.size(78.dp)) {
                 Box(Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp)).background(cs.surfaceVariant)
                     .border(if (on) 2.dp else 1.dp, if (on) cs.primary else cs.outline, RoundedCornerShape(16.dp)).clickable { vm.select(i) }) {
@@ -220,7 +222,7 @@ fun FilmStrip(st: UiState, vm: MainViewModel, onPick: () -> Unit) {
                     Text(badge, fontSize = 10.sp, color = Color.White, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                         modifier = Modifier.align(Alignment.BottomEnd).padding(5.dp).background(Color(0x99000000), RoundedCornerShape(7.dp)).padding(horizontal = 7.dp, vertical = 2.dp))
                     if (cutTag) Text(stringResource(R.string.badge_cut), fontSize = 10.sp, color = Color(0xFF3A2A00), fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.TopStart).padding(5.dp).background(Tokens.Warn, RoundedCornerShape(7.dp)).padding(horizontal = 7.dp, vertical = 2.dp))
+                        modifier = Modifier.testTag("cut_badge").align(Alignment.TopStart).padding(5.dp).background(Tokens.Warn, RoundedCornerShape(7.dp)).padding(horizontal = 7.dp, vertical = 2.dp))
                 }
                 if (it.override != null) Box(Modifier.align(Alignment.TopEnd).padding(6.dp).size(9.dp).clip(androidx.compose.foundation.shape.CircleShape).background(cs.primary))
                 if (on) Box(Modifier.align(Alignment.TopEnd).offset(x = 6.dp, y = (-6).dp).size(22.dp).clip(androidx.compose.foundation.shape.CircleShape)
@@ -307,7 +309,7 @@ fun ResultsSheet(st: UiState, vm: MainViewModel, onShare: (List<ResultEntry>) ->
                     val o = r.output
                     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(cs.surfaceVariant.copy(alpha = 0.6f)).border(1.dp, cs.outline, RoundedCornerShape(16.dp)).padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(Modifier.size(46.dp).clip(RoundedCornerShape(11.dp)).background(cs.surface)) {
+                        Box(Modifier.size(56.dp).clip(RoundedCornerShape(12.dp)).background(cs.surface)) {
                             src?.thumb?.let { b -> Image(b.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
                         }
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {

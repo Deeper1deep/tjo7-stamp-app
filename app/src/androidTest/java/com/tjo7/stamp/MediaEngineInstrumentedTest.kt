@@ -218,4 +218,19 @@ class MediaEngineInstrumentedTest {
         val pb = IntArray(b.width * b.height); b.getPixels(pb, 0, b.width, 0, 0, b.width, b.height)
         assertTrue("frames at start and end differ", !pa.contentEquals(pb))
     }
+
+    @Test fun longGifIsTrimmedTo15SecondsAndTagged() {
+        val info = Support.probe(Support.asset("long20.gif"))
+        assertTrue("fixture is ~20s: " + info.durationMs, info.durationMs in 19_000..21_000)
+        for (fmt in listOf(OutFormat.AUTO, OutFormat.GIF)) {
+            val o = export(info, StampSettings(format = fmt))
+            val cut = o.cut
+            assertNotNull("cut tag for $fmt", cut)
+            assertEquals(15.0, cut!!.first, 0.4); assertEquals(20.0, cut.second, 0.6)
+            assertEquals(OutFormat.GIF, o.format)
+            val sc = GifDecoder.scan(o.file.readBytes())
+            val srcFrames = GifDecoder.scan(Support.asset("long20.gif").readBytes()).frames
+            assertTrue("output frames ${sc.frames} fewer than source $srcFrames", sc.frames < srcFrames)
+        }
+    }
 }

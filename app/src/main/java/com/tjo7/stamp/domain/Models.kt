@@ -24,17 +24,18 @@ enum class CreditMode(val key: String) {
 enum class OutFormat(val key: String, val ext: String, val mime: String) {
     AUTO("auto", "", ""),
     GIF("gif", "gif", "image/gif"),
+    WEBM("webm", "webm", "video/webm"),
     MP4("mp4", "mp4", "video/mp4"),
     PNG("png", "png", "image/png"),
     JPG("jpg", "jpg", "image/jpeg"),
     WEBP("webp", "webp", "image/webp");
 
-    val isVideo get() = this == MP4
+    val isVideo get() = this == MP4 || this == WEBM
 
     companion object {
         fun from(key: String?): OutFormat? = entries.firstOrNull { it.key == key }
         /** Old web builds also stored "webm"; WebM video export is replaced by MP4 natively. */
-        fun fromLegacy(key: String?): OutFormat? = if (key == "webm") MP4 else from(key)
+        fun fromLegacy(key: String?): OutFormat? = from(key)
     }
 }
 
@@ -56,7 +57,7 @@ data class StampSettings(
     val text: String = DEFAULT_TEXT,
     val corner: Corner = Corner.BL,
     val widthPct: Int = 13,
-    val marginPct: Int = 2,
+    val marginPct: Float = 2f,
     val opacity: Int = 55,
     val shadow: Int = 0,
     val white: Boolean = true,
@@ -85,14 +86,14 @@ data class StampSettings(
     )
 
     fun applyPreset(p: Preset): StampSettings = when (p) {
-        Preset.CREDIT -> copy(mode = CreditMode.STATIC, widthPct = 13, marginPct = 2, opacity = 55, bold = false)
-        Preset.BLINK -> copy(mode = CreditMode.BLINK, widthPct = 24, marginPct = 3, opacity = 100, bold = true)
+        Preset.CREDIT -> copy(mode = CreditMode.STATIC, widthPct = 13, marginPct = 2f, opacity = 55, bold = false)
+        Preset.BLINK -> copy(mode = CreditMode.BLINK, widthPct = 24, marginPct = 3f, opacity = 100, bold = true)
     }
 
     /** Clamp every field into its valid range (used for data loaded from disk). */
     fun sanitized() = copy(
         text = text.take(MAX_TEXT),
-        widthPct = widthPct.coerceIn(1, 100), marginPct = marginPct.coerceIn(0, 100),
+        widthPct = widthPct.coerceIn(1, 100), marginPct = marginPct.coerceIn(0f, 100f),
         opacity = opacity.coerceIn(0, 100), shadow = shadow.coerceIn(0, 100),
         dx = dx.coerceIn(-100f, 100f), dy = dy.coerceIn(-100f, 100f),
     )

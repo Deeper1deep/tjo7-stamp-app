@@ -19,7 +19,7 @@ object StampGeometry {
         return refSize * (frameW * fracPct / 100f) / base
     }
 
-    fun padding(frameW: Int, marginPct: Int, strokeW: Float, fontSize: Float, shadowAmt: Float) =
+    fun padding(frameW: Int, marginPct: Float, strokeW: Float, fontSize: Float, shadowAmt: Float) =
         frameW * marginPct / 100f + strokeW / 2f + fontSize * 0.2f * shadowAmt
 
     fun place(

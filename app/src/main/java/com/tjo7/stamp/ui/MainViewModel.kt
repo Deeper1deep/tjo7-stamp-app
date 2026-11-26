@@ -44,6 +44,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var updateJob: Job? = null
     private var base: Bitmap? = null
     private var baseId = -1L
+    private var baseSeek = -1L
+    private var sample: Bitmap? = null
     private var checkedOnce = false
 
     init {
@@ -51,6 +53,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             importer.clearWork(); engine.clearOutputs(); sharer.clear()
         }
         viewModelScope.launch {
+            // One-time: carry over the old web build's saved settings (same package, so its localStorage survives the update).
+            if (!repo.legacyDone()) runCatching { repo.importLegacy(LegacyImport.read(ctx)) }
             val s = repo.load()
             _ui.update { it.copy(global = s, settingsLoaded = true) }
             repo.darkTheme.collect { d -> _ui.update { it.copy(dark = d) } }
@@ -106,6 +110,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun resetAllItems() {
+        _ui.update { st -> st.copy(items = st.items.map { it.copy(override = null) }) }
+        refreshPreview(); say(str(R.string.msg_items_reset))
+    }
+
     private fun persist() { val g = _ui.value.global; viewModelScope.launch { repo.save(g) } }
 
     // ------------------------------------------------------------ import
@@ -129,7 +138,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun select(i: Int) { _ui.update { it.copy(current = i.coerceIn(0, maxOf(0, it.items.size - 1))) }; refreshPreview() }
+    fun select(i: Int) { _ui.update { it.copy(current = i.coerceIn(0, maxOf(0, it.items.size - 1)), seekMs = 0L) }; refreshPreview() }
+    fun seek(ms: Long) { _ui.update { it.copy(seekMs = ms.coerceAtLeast(0L)) }; refreshPreview() }
+    fun closeResults() = _ui.update { it.copy(resultsSheet = false) }
 
     fun remove(i: Int) {
         _ui.update { st ->
@@ -149,15 +160,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val s = st.effective(item)
             val bmp = withContext(Dispatchers.Default) {
                 try {
-                    if (item != null && (baseId != item.info.id || base == null)) {
-                        base = SourceLoader.previewFrame(ctx, item.info, 1080); baseId = item.info.id
+                    val seekNow = if (item != null && item.info.kind != MediaKind.IMAGE) st.seekMs else -1L
+                    if (item != null && (baseId != item.info.id || base == null || baseSeek != seekNow)) {
+                        base = SourceLoader.previewFrame(ctx, item.info, 1080, seekNow); baseId = item.info.id; baseSeek = seekNow
                     }
-                    if (item == null) { base = null; baseId = -1 }
-                    val show = if (s.mode == CreditMode.BLINK) st.previewShow else true
-                    engine.previewRender(if (s.transparent) null else base, s, show)
+                    if (item == null) { if (sample == null) sample = com.tjo7.stamp.media.SampleImage.make(); base = sample; baseId = -1 }
+                    val b = if (s.transparent) null else base
+                    val on = engine.previewRender(b, s, true)
+                    val off = if (s.mode == CreditMode.BLINK) engine.previewRender(b, s, false) else null
+                    on to off
                 } catch (e: Exception) { null }
             }
-            _ui.update { it.copy(preview = bmp) }
+            _ui.update { it.copy(preview = bmp?.first, previewOff = bmp?.second, isSample = item == null) }
         }
     }
 
@@ -195,7 +209,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             if (out.size - ok > 0) parts.add(ctx.getString(R.string.msg_failed, out.size - ok))
             if (over > 0) parts.add(ctx.getString(R.string.msg_over_limit, over))
             if (cut > 0) parts.add(ctx.getString(R.string.msg_cut, cut))
-            _ui.update { it.copy(busy = false, progress = 1f, message = parts.joinToString(" · ")) }
+            _ui.update { it.copy(busy = false, progress = 1f, message = parts.joinToString(" · "), resultsSheet = out.isNotEmpty()) }
         }
     }
 
@@ -266,6 +280,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _ui.update { it.copy(updateSheet = false) }
     }
 
+    /** Test hook: shows the "update available" card in Settings without opening the sheet. */
+    fun previewUpdateCard(info: com.tjo7.stamp.data.UpdateInfo) = _ui.update { it.copy(update = UpdateUi.Available(info), updateSheet = false) }
     fun openUpdateSheet(v: Boolean) = _ui.update { it.copy(updateSheet = v) }
 
     fun downloadUpdate() {

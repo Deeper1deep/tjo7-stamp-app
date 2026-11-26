@@ -34,7 +34,7 @@ class MediaEngine(private val ctx: Context, val renderer: StampRenderer) {
 
     fun resolveFormat(info: SourceInfo, s: StampSettings): OutFormat {
         if (s.sticker && !s.transparent) return OutFormat.WEBP
-        if (s.transparent) return when (s.format) { OutFormat.PNG -> OutFormat.PNG; OutFormat.WEBP -> OutFormat.WEBP; else -> OutFormat.GIF }
+        if (s.transparent) return when (s.format) { OutFormat.PNG -> OutFormat.PNG; OutFormat.WEBP -> OutFormat.WEBP; OutFormat.WEBM -> OutFormat.WEBM; else -> OutFormat.GIF }
         if (s.format != OutFormat.AUTO) return s.format
         return when (info.kind) {
             MediaKind.ANIM_GIF, MediaKind.ANIM_WEBP -> OutFormat.GIF
@@ -117,12 +117,14 @@ class MediaEngine(private val ctx: Context, val renderer: StampRenderer) {
             val check: () -> Unit = { job?.ensureActive() }
             try {
                 when {
-                    fmt == OutFormat.MP4 && info.kind == MediaKind.VIDEO && !s.transparent -> {
+                    (fmt == OutFormat.MP4 || fmt == OutFormat.WEBM) && info.kind == MediaKind.VIDEO && !s.transparent -> {
                         val (w, h) = frameDims(info, s, null, true)
-                        val f = outFile(info, "mp4")
-                        videoExporter.export(info, s, w and -2, h and -2, f, onProgress)
+                        val f = outFile(info, fmt.ext)
+                        videoExporter.export(info, s, w and -2, h and -2, f, fmt == OutFormat.WEBM, onProgress)
                         ExportOutput(f, f.name, fmt, null, 0)
                     }
+                    fmt == OutFormat.WEBM && s.transparent -> exportAlphaWebm(info, s, onProgress, check)
+                    (fmt == OutFormat.MP4 || fmt == OutFormat.WEBM) && !s.transparent -> exportFramesVideo(info, s, fmt == OutFormat.WEBM, onProgress, check)
                     fmt == OutFormat.GIF -> exportGif(info, s, box, onProgress, check)
                     fmt == OutFormat.WEBP && (isAnimated(info, s)) -> exportAnimWebp(info, s, box, onProgress, check)
                     else -> exportStill(info, s, fmt, box, onProgress, check)
@@ -149,7 +151,7 @@ class MediaEngine(private val ctx: Context, val renderer: StampRenderer) {
     private fun exportStill(
         info: SourceInfo, s: StampSettings, fmt0: OutFormat, box: IntArray?, onProgress: (Float) -> Unit, check: () -> Unit,
     ): ExportOutput {
-        val fmt = if (fmt0 == OutFormat.MP4 || fmt0 == OutFormat.GIF) OutFormat.PNG else fmt0
+        val fmt = if (fmt0 == OutFormat.MP4 || fmt0 == OutFormat.WEBM || fmt0 == OutFormat.GIF) OutFormat.PNG else fmt0
         val src: Bitmap? = if (s.transparent) null else {
             if (info.kind == MediaKind.IMAGE) SourceLoader.decodeStill(ctx, info) else SourceLoader.previewFrame(ctx, info, 0)
         }
@@ -176,6 +178,64 @@ class MediaEngine(private val ctx: Context, val renderer: StampRenderer) {
         }
         file.writeBytes(bytes)
         return ExportOutput(file, file.name, fmt, null, if (lim) WhatsApp.STATIC_MAX else 0)
+    }
+
+    /** Transparent text-only clip as VP8 WebM with an alpha channel (3 seconds; the credit blinks in the second second when blink is on). */
+    private fun exportAlphaWebm(info: SourceInfo, s: StampSettings, onProgress: (Float) -> Unit, check: () -> Unit): ExportOutput {
+        val (w0, h0) = frameDims(info, s, null, true)
+        val w = w0 and -2; val h = h0 and -2
+        val file = overlayName("webm")
+        val fps = 15
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val enc = AlphaWebmEncoder(file, w, h, fps)
+        try {
+            val steps = if (s.mode == CreditMode.STATIC) listOf(true to 3) else listOf(false to 1, true to 1, false to 1)
+            for ((i, st) in steps.withIndex()) {
+                check()
+                renderer.renderFrame(null, w, h, s, st.first, false, null, bmp)
+                enc.add(bmp, st.second * fps)
+                onProgress((i + 1f) / steps.size)
+            }
+            enc.finish()
+        } catch (e: Exception) { enc.abort(); file.delete(); throw e }
+        return ExportOutput(file, file.name, OutFormat.WEBM, null, 0)
+    }
+
+    // ---------------------------------------------------------------- image / GIF -> video
+    /** An image becomes a 3 second clip (credit blinks in the second second); a GIF or animated WebP keeps its motion, capped at 15 s. */
+    private fun exportFramesVideo(info: SourceInfo, s: StampSettings, webm: Boolean, onProgress: (Float) -> Unit, check: () -> Unit): ExportOutput {
+        val (w0, h0) = frameDims(info, s, null, true)
+        val w = w0 and -2; val h = h0 and -2
+        val file = outFile(info, if (webm) "webm" else "mp4")
+        val fps = 15
+        val canvasBmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val enc = FrameVideoEncoder(file, w, h, fps, webm)
+        var cut: Pair<Double, Double>? = null
+        try {
+            if (!info.isMotion) {
+                val src = if (info.kind == MediaKind.IMAGE) SourceLoader.decodeStill(ctx, info, maxOf(w, h)) else SourceLoader.previewFrame(ctx, info, maxOf(w, h))
+                val steps = if (s.mode == CreditMode.STATIC) listOf(true to 3) else listOf(false to 1, true to 1, false to 1)
+                for ((i, st) in steps.withIndex()) {
+                    check()
+                    renderer.renderFrame(src, w, h, s, st.first, true, null, canvasBmp)
+                    enc.add(canvasBmp, st.second * fps)
+                    onProgress((i + 1f) / steps.size)
+                }
+            } else {
+                val cap = 15.0; val full = info.durationMs / 1000.0
+                var count = 0
+                val cutHere = SourceLoader.forEachFrame(ctx, info, cap, fps.toDouble(), maxOf(w, h), 1) { b, t, d ->
+                    check()
+                    renderer.renderFrame(b, w, h, s, creditVisibleAt(s.mode, t + 1e-4), true, null, canvasBmp)
+                    enc.add(canvasBmp, maxOf(1, Math.round(d * fps).toInt()))
+                    count++; onProgress(minOf(0.95f, count / (minOf(full, cap) * fps).toFloat()))
+                    true
+                }
+                if (cutHere || full > cap + 0.3) cut = minOf(full, cap) to full
+            }
+            enc.finish()
+        } catch (e: Exception) { enc.abort(); file.delete(); throw e }
+        return ExportOutput(file, file.name, if (webm) OutFormat.WEBM else OutFormat.MP4, cut, 0)
     }
 
     // ---------------------------------------------------------------- GIF

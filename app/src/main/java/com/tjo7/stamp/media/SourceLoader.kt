@@ -246,19 +246,24 @@ object SourceLoader {
     }
 
     /** One representative frame for previews/thumbnails (video: ~1 s in so a blink-visible moment shows). */
-    fun previewFrame(ctx: Context, info: SourceInfo, maxSide: Int): Bitmap = when (info.kind) {
+    fun previewFrame(ctx: Context, info: SourceInfo, maxSide: Int, atMs: Long = -1L): Bitmap = when (info.kind) {
         MediaKind.IMAGE -> decodeStill(ctx, info, maxSide)
         MediaKind.VIDEO -> {
             val r = MediaMetadataRetriever()
             try {
                 r.setDataSource(ctx, info.uri)
-                val t = minOf(1_000_000L, info.durationMs * 500)
-                val fr = r.getFrameAtTime(t, MediaMetadataRetriever.OPTION_CLOSEST_SYNC) ?: r.getFrameAtTime(0) ?: throw UnsupportedMediaException("frame")
+                val t = if (atMs >= 0) atMs * 1000 else minOf(1_000_000L, info.durationMs * 500)
+                val fr = r.getFrameAtTime(t, if (atMs >= 0) MediaMetadataRetriever.OPTION_CLOSEST else MediaMetadataRetriever.OPTION_CLOSEST_SYNC) ?: r.getFrameAtTime(0) ?: throw UnsupportedMediaException("frame")
                 downscale(fr, maxSide)
             } finally { try { r.release() } catch (_: Exception) { } }
         }
         else -> {
             var first: Bitmap? = null
+            if (atMs >= 0) {
+                // animated GIF / WebP: the last frame that has started by atMs
+                val at = atMs / 1000.0
+                forEachFrame(ctx, info, 1e9, 1.0, maxSide) { b, start, _ -> if (first != null && start > at) false else { first = b.copy(Bitmap.Config.ARGB_8888, false); true } }
+            } else
             forEachFrame(ctx, info, 1.0, 1.0, maxSide) { b, _, _ -> first = b.copy(Bitmap.Config.ARGB_8888, false); false }
             downscale(first ?: throw UnsupportedMediaException("frame"), maxSide)
         }

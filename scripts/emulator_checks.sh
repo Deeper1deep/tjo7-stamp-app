@@ -3,8 +3,21 @@
 set -euo pipefail
 PKG=com.tjo7.stamp
 NEW=dist/tjo7-stamp.apk
+adb shell wm size 880x1920; adb shell wm density 343; sleep 2; echo "display: $(adb shell wm size | tr '\n' ' ') $(adb shell wm density | tr '\n' ' ')"
+echo "== migration check (build-26 settings -> new app)"
+bash scripts/migrate_check.sh "$NEW" || true
+mkdir -p dist/shots; adb pull /data/local/tmp/shots/. dist/shots/ >/dev/null 2>&1 || true
+adb uninstall $PKG >/dev/null 2>&1 || true
 echo "== instrumented tests"
-ok=0; for i in 1 2; do gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace && ok=1 && break; sleep 30; done; [ "$ok" = 1 ] || { echo "INSTRUMENTED TESTS FAILED"; adb logcat -d | tail -150; exit 1; }
+ok=0; for i in 1 2; do gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace && ok=1 && break; sleep 30; done; [ "$ok" = 1 ] || { echo "INSTRUMENTED TESTS FAILED"; mkdir -p dist/shots; adb pull /data/local/tmp/shots/. dist/shots/ >/dev/null 2>&1 || true; adb logcat -d | tail -150; exit 1; }
+
+adb logcat -d -s ALPHAB64:I | grep ALPHAB64 | sed -E "s/^.*ALPHAB64 *: *//" | sort -n | awk '{printf "%s",$2}' | base64 -d > dist/shots/alpha_sample.webm 2>/dev/null || true
+adb logcat -d -s EXPORTB64:I | grep EXPORTB64 | sed -E "s/^.*EXPORTB64 *: *//" | sort -n | awk '{printf "%s",$2}' | base64 -d > dist/shots/alpha_export.webm 2>/dev/null || true
+ls -l dist/shots/alpha_sample.webm dist/shots/alpha_export.webm || true
+echo "== screenshots"
+mkdir -p dist/shots
+adb pull /data/local/tmp/shots/. dist/shots/ >/dev/null 2>&1 || echo "no screenshots pulled"
+ls dist/shots || true
 
 echo "== install-over test"
 OLD=/tmp/old-release.apk

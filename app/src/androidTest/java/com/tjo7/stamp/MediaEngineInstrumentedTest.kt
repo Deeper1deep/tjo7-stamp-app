@@ -132,4 +132,105 @@ class MediaEngineInstrumentedTest {
             assertTrue(job.isCancelled)
         }
     }
+
+    private fun checkVideo(o: ExportOutput, mime: String, minMs: Long, maxMs: Long) {
+        assertTrue("size ${o.size}", o.size > 2_000)
+        val r = MediaMetadataRetriever(); r.setDataSource(o.file.absolutePath)
+        assertEquals(mime, r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE))
+        val dur = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)!!.toLong()
+        assertTrue("duration $dur not in $minMs..$maxMs", dur in minMs..maxMs)
+        val f = r.getFrameAtTime(500_000, MediaMetadataRetriever.OPTION_CLOSEST)
+        assertNotNull("frame decodes", f)
+        var sum = 0L; for (y in 0 until f!!.height step 7) for (x in 0 until f.width step 7) sum += f.getPixel(x, y) and 255
+        assertTrue("frame has picture", sum > 0)
+    }
+
+    @Test fun videoExportsWebm() {
+        val info = Support.probe(Support.asset("sample.mp4"))
+        val o = export(info, StampSettings(format = OutFormat.WEBM))
+        assertEquals(OutFormat.WEBM, o.format); assertEquals("webm", o.file.extension)
+        checkVideo(o, "video/webm", info.durationMs - 900, info.durationMs + 900)
+    }
+
+    @Test fun imageExportsMp4AndWebmAsThreeSecondClips() {
+        val info = Support.probe(Support.asset("sample.png"))
+        val m = export(info, StampSettings(format = OutFormat.MP4)); assertEquals(OutFormat.MP4, m.format)
+        checkVideo(m, "video/mp4", 2500, 3600)
+        val w = export(info, StampSettings(format = OutFormat.WEBM, mode = CreditMode.BLINK)); assertEquals(OutFormat.WEBM, w.format)
+        checkVideo(w, "video/webm", 2500, 3600)
+    }
+
+    @Test fun gifExportsMp4AndWebmKeepingMotion() {
+        val info = Support.probe(Support.asset("sample.gif"))
+        val m = export(info, StampSettings(format = OutFormat.MP4)); assertEquals(OutFormat.MP4, m.format)
+        checkVideo(m, "video/mp4", minOf(500L, info.durationMs / 2), info.durationMs + 1500)
+        val w = export(info, StampSettings(format = OutFormat.WEBM)); assertEquals(OutFormat.WEBM, w.format)
+        checkVideo(w, "video/webm", minOf(500L, info.durationMs / 2), info.durationMs + 1500)
+    }
+
+    @Test fun transparentWebmCarriesAnAlphaTrack() {
+        val w = 320; val h = 120; val fps = 15
+        val f = java.io.File(Support.target.getExternalFilesDir(null), "alpha_sample.webm")
+        val enc = AlphaWebmEncoder(f, w, h, fps)
+        val bmp = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+        for (k in 0 until 45) {
+            // red box with a soft alpha ramp on the left half, fully transparent on the right half; the box slides so frames differ
+            val px = IntArray(w * h) { i -> val x = i % w; val y = i / w
+                if (x < 160 && y > 20 + (k % 10)) (((x * 255 / 160) shl 24) or 0xFF2020) else 0 }
+            bmp.setPixels(px, 0, w, 0, 0, w, h)
+            enc.add(bmp)
+        }
+        enc.finish()
+        assertTrue("key frames line up", enc.keyframesAligned())
+        val bytes = f.readBytes()
+        fun has(vararg b: Int): Boolean { outer@ for (i in 0..bytes.size - b.size) { for (j in b.indices) if ((bytes[i + j].toInt() and 255) != b[j]) continue@outer; return true }; return false }
+        assertTrue("EBML header", has(0x1A, 0x45, 0xDF, 0xA3)); assertTrue("alpha mode", has(0x53, 0xC0, 0x01, 0, 0, 0, 0, 0, 0, 0x01, 0x01)); assertTrue("BlockAdditions", has(0x75, 0xA1))
+        val r = MediaMetadataRetriever(); r.setDataSource(f.absolutePath)
+        val dur = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)!!.toLong()
+        assertTrue("duration $dur", dur in 2000..4000)
+        assertNotNull(r.getFrameAtTime(1_000_000, MediaMetadataRetriever.OPTION_CLOSEST))
+        // keep a copy where CI can pull it for an outside check (also dumped to logcat as base64)
+        run { val b64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP); b64.chunked(2000).forEachIndexed { i, c -> android.util.Log.i("ALPHAB64", "%04d %s".format(i, c)) } }
+        val ua = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
+        ua.executeShellCommand("mkdir -p /data/local/tmp/shots").close()
+        val pfd = ua.executeShellCommand("cp " + f.absolutePath + " /data/local/tmp/shots/alpha_sample.webm")
+        android.os.ParcelFileDescriptor.AutoCloseInputStream(pfd).use { it.readBytes() }
+    }
+
+    @Test fun engineExportsTransparentWebm() {
+        val info = Support.probe(Support.asset("sample.png"))
+        val o = export(info, StampSettings(transparent = true, format = OutFormat.WEBM, mode = CreditMode.BLINK))
+        assertEquals(OutFormat.WEBM, o.format)
+        assertTrue(o.size > 1500)
+        val r = MediaMetadataRetriever(); r.setDataSource(o.file.absolutePath)
+        assertEquals("video/webm", r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE))
+        // dump the real engine output so CI can validate its alpha with ffprobe/Chrome
+        val b64 = android.util.Base64.encodeToString(o.file.readBytes(), android.util.Base64.NO_WRAP)
+        b64.chunked(2000).forEachIndexed { i, c -> android.util.Log.i("EXPORTB64", "%05d %s".format(i, c)) }
+    }
+
+    @Test fun gifSeekShowsDifferentFrames() {
+        val info = Support.probe(Support.asset("land.gif"))
+        assertTrue(info.kind == com.tjo7.stamp.domain.MediaKind.ANIM_GIF)
+        val a = SourceLoader.previewFrame(Support.target, info, 0, 0L)
+        val b = SourceLoader.previewFrame(Support.target, info, 0, info.durationMs - 100)
+        val pa = IntArray(a.width * a.height); a.getPixels(pa, 0, a.width, 0, 0, a.width, a.height)
+        val pb = IntArray(b.width * b.height); b.getPixels(pb, 0, b.width, 0, 0, b.width, b.height)
+        assertTrue("frames at start and end differ", !pa.contentEquals(pb))
+    }
+
+    @Test fun longGifIsTrimmedTo15SecondsAndTagged() {
+        val info = Support.probe(Support.asset("long20.gif"))
+        assertTrue("fixture is ~20s: " + info.durationMs, info.durationMs in 19_000..21_000)
+        for (fmt in listOf(OutFormat.AUTO, OutFormat.GIF)) {
+            val o = export(info, StampSettings(format = fmt))
+            val cut = o.cut
+            assertNotNull("cut tag for $fmt", cut)
+            assertEquals(15.0, cut!!.first, 0.4); assertEquals(20.0, cut.second, 0.6)
+            assertEquals(OutFormat.GIF, o.format)
+            val sc = GifDecoder.scan(o.file.readBytes())
+            val srcFrames = GifDecoder.scan(Support.asset("long20.gif").readBytes()).frames
+            assertTrue("output frames ${sc.frames} fewer than source $srcFrames", sc.frames < srcFrames)
+        }
+    }
 }

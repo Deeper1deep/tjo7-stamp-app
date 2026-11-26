@@ -80,7 +80,7 @@ fun SwitchRow(title: String, hint: String? = null, checked: Boolean, onChange: (
 
 /** A button that repeats while it is held (used for the move-credit arrows). */
 @Composable
-fun RepeatButton(label: String, size: Dp = 52.dp, onStep: () -> Unit) {
+fun RepeatButton(label: String, size: Dp = 44.dp, onStep: () -> Unit) {
     val step by rememberUpdatedState(onStep)
     var pressed by remember { mutableStateOf(false) }
     LaunchedEffect(pressed) {

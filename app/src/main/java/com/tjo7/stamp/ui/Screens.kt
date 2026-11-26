@@ -388,24 +388,24 @@ fun CreditTab(st: UiState, vm: MainViewModel, onPick: () -> Unit) {
             if (!tr) Section("") {
                 CheckRow(stringResource(R.string.move_t), stringResource(R.string.move_s), st.moveOn) { vm.setMove(it) }
                 if (st.moveOn) {
-                    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                 RepeatButton("▲") { vm.nudge(0f, -0.5f) }
-                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                                     RepeatButton("◀") { vm.nudge(-0.5f, 0f) }
-                                    Box(Modifier.size(52.dp).clip(RoundedCornerShape(14.dp)).background(cs.surfaceVariant).clickable { vm.resetMove() }, contentAlignment = Alignment.Center) {
-                                        Icon(OldIcons.Reset, stringResource(R.string.move_reset), Modifier.size(20.dp), tint = cs.primary)
+                                    Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(cs.surfaceVariant).clickable { vm.resetMove() }, contentAlignment = Alignment.Center) {
+                                        Icon(OldIcons.Reset, stringResource(R.string.move_reset), Modifier.size(18.dp), tint = cs.primary)
                                     }
                                     RepeatButton("▶") { vm.nudge(0.5f, 0f) }
                                 }
                                 RepeatButton("▼") { vm.nudge(0f, 0.5f) }
                             }
                         }
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.move_help), Modifier.weight(1f), fontSize = 12.8.sp, color = cs.onSurfaceVariant, lineHeight = 21.sp)
-                            Text(stringResource(if (s.dx != 0f || s.dy != 0f) R.string.pos_moved else R.string.pos_corner), fontSize = 12.sp, color = cs.primary,
-                                modifier = Modifier.background(cs.primaryContainer, RoundedCornerShape(10.dp)).padding(horizontal = 10.dp, vertical = 4.dp))
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.Start, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(stringResource(R.string.move_help), fontSize = 11.5.sp, color = cs.onSurfaceVariant, lineHeight = 18.sp)
+                            Text(stringResource(if (s.dx != 0f || s.dy != 0f) R.string.pos_moved else R.string.pos_corner), fontSize = 11.sp, color = cs.primary,
+                                modifier = Modifier.background(cs.primaryContainer, RoundedCornerShape(10.dp)).padding(horizontal = 9.dp, vertical = 3.dp))
                         }
                     }
                 }

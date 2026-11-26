@@ -51,6 +51,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             importer.clearWork(); engine.clearOutputs(); sharer.clear()
         }
         viewModelScope.launch {
+            // One-time: carry over the old web build's saved settings (same package, so its localStorage survives the update).
+            if (!repo.legacyDone()) runCatching { repo.importLegacy(LegacyImport.read(ctx)) }
             val s = repo.load()
             _ui.update { it.copy(global = s, settingsLoaded = true) }
             repo.darkTheme.collect { d -> _ui.update { it.copy(dark = d) } }

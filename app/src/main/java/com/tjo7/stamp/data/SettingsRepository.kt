@@ -26,6 +26,7 @@ class SettingsRepository(private val ctx: Context) {
         val size = stringPreferencesKey("size"); val audio = booleanPreferencesKey("audio")
         val crop = booleanPreferencesKey("stickerCrop"); val dark = booleanPreferencesKey("dark")
         val updSkip = intPreferencesKey("updSkip")
+        val legacyDone = booleanPreferencesKey("legacyDone")
     }
 
     val settings: Flow<StampSettings> = ctx.store.data.map { read(it) }
@@ -40,6 +41,36 @@ class SettingsRepository(private val ctx: Context) {
             it[K.opacity] = s.opacity; it[K.shadow] = s.shadow; it[K.white] = s.white; it[K.bold] = s.bold
             it[K.mode] = s.mode.key; it[K.format] = s.format.key; it[K.size] = s.size.key
             it[K.audio] = s.keepAudio; it[K.crop] = s.stickerCrop
+        }
+    }
+
+    suspend fun legacyDone(): Boolean = ctx.store.data.first()[K.legacyDone] == true
+
+    /** One-time import of the old web build's saved settings. Never overrides values the new app already saved. */
+    suspend fun importLegacy(l: LegacyImport.Legacy?) {
+        ctx.store.edit { p ->
+            if (p[K.legacyDone] == true) return@edit
+            p[K.legacyDone] = true
+            if (l == null) return@edit
+            if (p[K.text] == null && p[K.corner] == null && l.settings != null) {
+                val o = l.settings; val g = o.optJSONObject("g")
+                fun num(j: org.json.JSONObject?, k: String, lo: Int, hi: Int): Int? =
+                    j?.takeIf { it.has(k) && !it.isNull(k) }?.optDouble(k)?.takeIf { !it.isNaN() && it >= lo && it <= hi }?.toInt()
+                Corner.from(g?.optString("corner"))?.let { p[K.corner] = it.key }
+                num(g, "width", 1, 100)?.let { p[K.width] = it }
+                num(g, "margin", 0, 100)?.let { p[K.margin] = it }
+                num(g, "opacity", 0, 100)?.let { p[K.opacity] = it }
+                num(g, "shadow", 0, 100)?.let { p[K.shadow] = it }
+                g?.optInt("weight", 0)?.let { if (it == 400 || it == 700) p[K.bold] = it == 700 }
+                g?.optString("color")?.let { if (it == "#ffffff" || it == "#000000") p[K.white] = it == "#ffffff" }
+                CreditMode.from(g?.optString("mode"))?.let { p[K.mode] = it.key }
+                o.optString("text").takeIf { it.isNotBlank() }?.let { p[K.text] = it.take(StampSettings.MAX_TEXT) }
+                OutFormat.fromLegacy(o.optString("fmt"))?.let { p[K.format] = it.key }
+                SizeSel.from(o.optString("sizeSel"))?.let { p[K.size] = it.key }
+                if (o.has("audio") && !o.isNull("audio")) p[K.audio] = o.optBoolean("audio", true)
+                if (o.has("crop") && !o.isNull("crop")) p[K.crop] = o.optBoolean("crop", true)
+            }
+            if (p[K.dark] == null) l.theme?.let { if (it == "light" || it == "dark") p[K.dark] = it == "dark" }
         }
     }
 

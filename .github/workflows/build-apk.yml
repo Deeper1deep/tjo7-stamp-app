@@ -137,6 +137,7 @@ jobs:
           api-level: 33
           arch: x86_64
           target: google_apis
+          profile: pixel_6
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true

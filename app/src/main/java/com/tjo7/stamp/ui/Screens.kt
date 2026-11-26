@@ -181,8 +181,7 @@ fun SeekTransport(st: UiState, vm: MainViewModel) {
         }
         Column(Modifier.weight(1f)) {
             androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
-                Slider(value = (st.seekMs.toFloat() / dur).coerceIn(0f, 1f), onValueChange = { vm.seek((it * dur).toLong()) },
-                    modifier = Modifier.fillMaxWidth().height(26.dp).testTag("seek"))
+                ThinSlider(value = st.seekMs.toFloat() / dur, onValueChange = { vm.seek((it * dur).toLong()) }, modifier = Modifier.height(24.dp).testTag("seek"))
             }
             val cur = st.currentItem
             Text(stringResource(if (st.editing.mode == CreditMode.BLINK) R.string.tn_blink_vid else R.string.tn_static_vid), fontSize = 10.5.sp, color = cs.onSurfaceVariant)

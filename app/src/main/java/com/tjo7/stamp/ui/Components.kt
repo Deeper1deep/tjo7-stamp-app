@@ -11,6 +11,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -29,7 +32,7 @@ val Pad = 16.dp
 fun Section(title: String, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Surface(modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (title.isNotBlank()) Text(title, style = MaterialTheme.typography.titleMedium)
             content()
         }
@@ -57,7 +60,7 @@ fun <T> Segmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> 
             Box(Modifier.weight(1f).clip(RoundedCornerShape(10.dp))
                 .background(if (on) MaterialTheme.colorScheme.surface else androidx.compose.ui.graphics.Color.Transparent)
                 .then(if (on) Modifier.border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp)) else Modifier)
-                .clickable(role = Role.RadioButton) { onSelect(v) }.padding(vertical = 10.dp, horizontal = 4.dp),
+                .clickable(role = Role.RadioButton) { onSelect(v) }.padding(vertical = 8.dp, horizontal = 4.dp),
                 contentAlignment = Alignment.Center) {
                 Text(label, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center, maxLines = 1,
                     color = if (on) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
@@ -74,7 +77,7 @@ fun SwitchRow(title: String, hint: String? = null, checked: Boolean, onChange: (
             Text(title, style = MaterialTheme.typography.bodyLarge)
             if (hint != null) Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Switch(checked = checked, onCheckedChange = null)
+        OldToggle(checked)
     }
 }
 
@@ -111,7 +114,7 @@ fun FormatChip(title: String, sub: String, on: Boolean, modifier: Modifier = Mod
     Column(modifier.clip(RoundedCornerShape(14.dp))
         .background(if (on) cs.primaryContainer else androidx.compose.ui.graphics.Color.Transparent)
         .border(1.5.dp, if (on) cs.primary else cs.outline, RoundedCornerShape(14.dp))
-        .clickable(role = Role.RadioButton, onClick = onClick).padding(vertical = 12.dp, horizontal = 6.dp),
+        .clickable(role = Role.RadioButton, onClick = onClick).padding(vertical = 8.dp, horizontal = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally) {
         Text(title, style = MaterialTheme.typography.titleMedium, color = if (on) cs.primary else cs.onSurface)
         Text(sub, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
@@ -252,8 +255,8 @@ fun OldSlider(label: String, value: Float, min: Float, max: Float, step: Float, 
         }
         androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
             val steps = (((max - min) / step).toInt() - 1).coerceAtLeast(0)
-            Slider(value = value.coerceIn(min, max), onValueChange = { onChange((Math.round((it - min) / step) * step + min).coerceIn(min, max)) },
-                valueRange = min..max, steps = steps)
+            ThinSlider(value = value.coerceIn(min, max), onValueChange = { onChange((Math.round((it - min) / step) * step + min).coerceIn(min, max)) },
+                min = min, max = max)
         }
     }
 }
@@ -307,7 +310,7 @@ fun CheckRow(title: String, hint: String, checked: Boolean, enabled: Boolean = t
             Text(title, style = MaterialTheme.typography.bodyLarge)
             Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Switch(checked = checked, onCheckedChange = null, enabled = enabled)
+        OldToggle(checked, enabled)
     }
 }
 
@@ -321,5 +324,39 @@ fun OldListRow(title: String, sub: String, onClick: () -> Unit) {
             Text(sub, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
         }
         androidx.compose.material3.Icon(OldIcons.Chevron, null, Modifier.size(18.dp), tint = cs.onSurfaceVariant)
+    }
+}
+
+
+/** On/off switch drawn like the old app's: blue track + white knob at the end when on, dark track + white knob at the start when off. No animation. */
+@Composable
+fun OldToggle(on: Boolean, enabled: Boolean = true) {
+    val cs = MaterialTheme.colorScheme
+    androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
+        Box(Modifier.width(42.dp).height(24.dp).clip(androidx.compose.foundation.shape.CircleShape)
+            .background(if (on) BtnBlue else cs.surfaceVariant).border(1.dp, if (on) BtnBlue else cs.outline, androidx.compose.foundation.shape.CircleShape)
+            .then(if (enabled) Modifier else Modifier.alpha(0.5f))) {
+            Box(Modifier.align(if (on) Alignment.CenterEnd else Alignment.CenterStart).padding(3.dp).size(18.dp).clip(androidx.compose.foundation.shape.CircleShape)
+                .background(androidx.compose.ui.graphics.Color.White))
+        }
+    }
+}
+
+/** Thin slider: 4dp track, 16dp white knob. Tap or drag anywhere on it. */
+@Composable
+fun ThinSlider(value: Float, onValueChange: (Float) -> Unit, min: Float = 0f, max: Float = 1f, modifier: Modifier = Modifier) {
+    val cs = MaterialTheme.colorScheme
+    var wPx by remember { mutableStateOf(1f) }
+    val frac = ((value - min) / (max - min)).coerceIn(0f, 1f)
+    val set = rememberUpdatedState(onValueChange)
+    Box(modifier.fillMaxWidth().height(24.dp).onSizeChanged { wPx = it.width.toFloat().coerceAtLeast(1f) }
+        .pointerInput(min, max) { detectTapGestures { o -> set.value(min + (o.x / wPx).coerceIn(0f, 1f) * (max - min)) } }
+        .pointerInput(min, max) { detectHorizontalDragGestures { ch, _ -> ch.consume(); set.value(min + (ch.position.x / wPx).coerceIn(0f, 1f) * (max - min)) } },
+        contentAlignment = Alignment.CenterStart) {
+        Box(Modifier.fillMaxWidth().height(4.dp).clip(androidx.compose.foundation.shape.CircleShape).background(cs.surfaceVariant))
+        Box(Modifier.fillMaxWidth(frac).height(4.dp).clip(androidx.compose.foundation.shape.CircleShape).background(cs.primary))
+        val d = androidx.compose.ui.platform.LocalDensity.current
+        Box(Modifier.offset(x = with(d) { (frac * (wPx - 16.dp.toPx())).toDp() }).size(16.dp).clip(androidx.compose.foundation.shape.CircleShape)
+            .background(androidx.compose.ui.graphics.Color.White))
     }
 }

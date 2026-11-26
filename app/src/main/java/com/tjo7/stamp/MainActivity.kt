@@ -14,6 +14,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -65,7 +66,13 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         containerColor = MaterialTheme.colorScheme.background,
                         snackbarHost = { SnackbarHost(snack) },
+                        topBar = { AppHeader(st.dark) { vm.setDark(!st.dark) } },
                         bottomBar = {
+                          Column {
+                            SaveBar(
+                                if (st.items.isEmpty()) stringResource(R.string.save_idle) else "${st.items.size} · " + stringResource(R.string.save_idle).substringAfter("· "),
+                                enabled = st.items.isNotEmpty() || st.global.transparent, busy = st.busy,
+                            ) { requestExport(st.items.size > 1 && !st.global.transparent) }
                             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                                 val tabs = listOf(
                                     Triple(Tab.EDITOR, R.string.tab_editor, Icons.Default.Home),
@@ -82,6 +89,7 @@ class MainActivity : ComponentActivity() {
                                     label = { Text(stringResource(label)) },
                                 )
                             }
+                          }
                         },
                     ) { pad ->
                         Box(Modifier.padding(pad).fillMaxSize()) {

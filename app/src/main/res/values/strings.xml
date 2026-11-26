@@ -104,4 +104,25 @@
     <string name="err_memory">الذاكرة مش كفاية. جرب حجم أصغر.</string>
     <string name="err_unsupported">نوع الملف ده مش مدعوم.</string>
     <string name="err_video">فشل معالجة الفيديو. جرب حجم أصغر أو صيغة تانية.</string>
+    <string name="app_title">ختم الحقوق</string>
+    <string name="app_sub">t.jo7 stamp</string>
+    <string name="save_btn">نزّل</string>
+    <string name="save_idle">مفيش ملفات لسه · نفس صيغة الأصل · الحجم الأصلي</string>
+    <string name="set_appearance">المظهر</string>
+    <string name="theme_dark">داكن</string>
+    <string name="theme_light">فاتح</string>
+    <string name="set_reset_items">رجّع كل الملفات للإعداد العام</string>
+    <string name="set_reset_items_sub">يلغي الإعدادات الخاصة بكل ملف</string>
+    <string name="set_reset_defaults">رجّع الإعدادات الافتراضية</string>
+    <string name="set_reset_defaults_sub">النص والمكان والصيغة والحجم</string>
+    <string name="set_stamp_title">ختم الحقوق</string>
+    <string name="set_stamp_sub">كل حاجة بتتعمل على جهازك، مفيش رفع لأي سيرفر.</string>
+    <string name="fmt_auto_sub">نفس الأصل</string>
+    <string name="fmt_gif_sub">متحرك</string>
+    <string name="fmt_mp4_sub">متوافق</string>
+    <string name="fmt_png_sub">جودة كاملة</string>
+    <string name="fmt_jpg_sub">أصغر حجم</string>
+    <string name="fmt_webp_sub">أصغر حجم</string>
+    <string name="fmt_auto_t">تلقائي</string>
+    <string name="msg_items_reset">رجّعت كل الملفات للإعداد العام.</string>
 </resources>

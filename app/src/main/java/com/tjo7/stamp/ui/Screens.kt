@@ -219,9 +219,17 @@ fun OutputTab(st: UiState, vm: MainViewModel) {
     val s = st.global
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Pad), verticalArrangement = Arrangement.spacedBy(Gap)) {
         Section(stringResource(R.string.out_format)) {
-            val fmts = listOf(OutFormat.AUTO to stringResource(R.string.fmt_auto), OutFormat.GIF to "GIF", OutFormat.MP4 to "MP4", OutFormat.PNG to "PNG", OutFormat.JPG to "JPG", OutFormat.WEBP to "WEBP")
-            Segmented(fmts.take(3), s.format) { v -> vm.edit { it.copy(format = v) } }
-            Segmented(fmts.drop(3), s.format) { v -> vm.edit { it.copy(format = v) } }
+            val fmts = listOf(
+                Triple(OutFormat.AUTO, stringResource(R.string.fmt_auto_t), stringResource(R.string.fmt_auto_sub)),
+                Triple(OutFormat.GIF, "GIF", stringResource(R.string.fmt_gif_sub)),
+                Triple(OutFormat.MP4, "MP4", stringResource(R.string.fmt_mp4_sub)),
+                Triple(OutFormat.PNG, "PNG", stringResource(R.string.fmt_png_sub)),
+                Triple(OutFormat.JPG, "JPG", stringResource(R.string.fmt_jpg_sub)),
+                Triple(OutFormat.WEBP, "WebP", stringResource(R.string.fmt_webp_sub)),
+            )
+            for (row in fmts.chunked(3)) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                for ((f, t, sub) in row) FormatChip(t, sub, s.format == f, Modifier.weight(1f)) { vm.edit { it.copy(format = f) } }
+            }
             Text(stringResource(R.string.out_video_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Section(stringResource(R.string.out_size)) {
@@ -252,9 +260,16 @@ fun SettingsTab(st: UiState, vm: MainViewModel, onLink: () -> Unit) {
             }
             OutlinedButton(onClick = { vm.checkUpdate(true) }, Modifier.fillMaxWidth().testTag("check_update")) { Text(stringResource(R.string.set_check)) }
         }
-        Section(stringResource(R.string.set_theme)) {
-            SwitchRow(stringResource(R.string.set_theme), null, st.dark) { vm.setDark(it) }
-            OutlinedButton(onClick = vm::resetDefaults, Modifier.fillMaxWidth()) { Text(stringResource(R.string.set_reset)) }
+        Section(stringResource(R.string.set_appearance)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                ThemeCard(stringResource(R.string.theme_dark), true, st.dark, Modifier.weight(1f)) { vm.setDark(true) }
+                ThemeCard(stringResource(R.string.theme_light), false, !st.dark, Modifier.weight(1f)) { vm.setDark(false) }
+            }
+        }
+        Section("") {
+            ListRow(stringResource(R.string.set_reset_items), stringResource(R.string.set_reset_items_sub)) { vm.resetAllItems() }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+            ListRow(stringResource(R.string.set_reset_defaults), stringResource(R.string.set_reset_defaults_sub)) { vm.resetDefaults() }
         }
         Section(stringResource(R.string.set_about)) {
             Text(stringResource(R.string.set_offline), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

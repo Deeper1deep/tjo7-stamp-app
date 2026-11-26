@@ -106,6 +106,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun resetAllItems() {
+        _ui.update { st -> st.copy(items = st.items.map { it.copy(override = null) }) }
+        refreshPreview(); say(str(R.string.msg_items_reset))
+    }
+
     private fun persist() { val g = _ui.value.global; viewModelScope.launch { repo.save(g) } }
 
     // ------------------------------------------------------------ import

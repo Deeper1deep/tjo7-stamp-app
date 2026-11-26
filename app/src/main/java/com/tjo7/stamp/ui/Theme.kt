@@ -24,20 +24,25 @@ object Tokens {
     val Ok = Color(0xFF3DDC97)
 }
 
+// Old (web) design tokens, ported 1:1 from the original index.html :root / [data-theme=dark].
 private val Dark = darkColorScheme(
-    primary = Tokens.Accent, onPrimary = Color(0xFF0B0F24), secondary = Tokens.Teal,
-    background = Color(0xFF0B0F24), onBackground = Color(0xFFE8EBFF),
-    surface = Color(0xFF141A38), onSurface = Color(0xFFE8EBFF),
-    surfaceVariant = Color(0xFF1B2347), onSurfaceVariant = Color(0xFF9AA3D1),
-    outline = Color(0xFF2C3566), error = Tokens.Danger,
+    primary = Color(0xFF8FA3FF), onPrimary = Color(0xFF0A0F33), primaryContainer = Color(0xFF1D2759), onPrimaryContainer = Color(0xFF8FA3FF),
+    secondary = Tokens.Teal,
+    background = Color(0xFF0A0D1B), onBackground = Color(0xFFEEF1FF),
+    surface = Color(0xFF141931), onSurface = Color(0xFFEEF1FF),
+    surfaceVariant = Color(0xFF0F1428), onSurfaceVariant = Color(0xFFA3ACCB),
+    outline = Color(0xFF262D4C), error = Tokens.Danger,
 )
 private val Light = lightColorScheme(
-    primary = Color(0xFF4A5BE0), onPrimary = Color.White, secondary = Color(0xFF0F9E8E),
-    background = Color(0xFFF3F5FF), onBackground = Color(0xFF12183A),
-    surface = Color.White, onSurface = Color(0xFF12183A),
-    surfaceVariant = Color(0xFFE6E9FA), onSurfaceVariant = Color(0xFF5A628C),
-    outline = Color(0xFFC9CEEA), error = Color(0xFFD93A4B),
+    primary = Color(0xFF2A47E8), onPrimary = Color.White, primaryContainer = Color(0xFFE3E8FF), onPrimaryContainer = Color(0xFF2A47E8),
+    secondary = Color(0xFF0F9E8E),
+    background = Color(0xFFF3F5FB), onBackground = Color(0xFF0E1330),
+    surface = Color.White, onSurface = Color(0xFF0E1330),
+    surfaceVariant = Color(0xFFEEF1F9), onSurfaceVariant = Color(0xFF5B6482),
+    outline = Color(0xFFDDE2F0), error = Color(0xFFD93A4B),
 )
+/** The old app's button colour (#2a47e8) in both themes. */
+val BtnBlue = Color(0xFF2A47E8)
 
 private fun type(): Typography {
     val base = Typography()

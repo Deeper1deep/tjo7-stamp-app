@@ -2,6 +2,7 @@ package com.tjo7.stamp.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,7 +27,7 @@ fun Section(title: String, modifier: Modifier = Modifier, content: @Composable C
     Surface(modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))) {
         Column(Modifier.padding(Pad), verticalArrangement = Arrangement.spacedBy(Gap)) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
+            if (title.isNotBlank()) Text(title, style = MaterialTheme.typography.titleMedium)
             content()
         }
     }
@@ -98,4 +99,78 @@ fun fmtBytes(n: Long): String = when {
     n < 1024 -> "$n B"
     n < 1048576 -> "%.0f KB".format(n / 1024.0)
     else -> "%.1f MB".format(n / 1048576.0)
+}
+
+@Composable
+fun FormatChip(title: String, sub: String, on: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    Column(modifier.clip(RoundedCornerShape(14.dp))
+        .background(if (on) cs.primaryContainer else androidx.compose.ui.graphics.Color.Transparent)
+        .border(1.5.dp, if (on) cs.primary else cs.outline, RoundedCornerShape(14.dp))
+        .clickable(role = Role.RadioButton, onClick = onClick).padding(vertical = 12.dp, horizontal = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(title, style = MaterialTheme.typography.titleMedium, color = if (on) cs.primary else cs.onSurface)
+        Text(sub, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+    }
+}
+
+@Composable
+fun ThemeCard(label: String, dark: Boolean, on: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    val bg = if (dark) androidx.compose.ui.graphics.Color(0xFF05060D) else androidx.compose.ui.graphics.Color.White
+    val bar = if (dark) androidx.compose.ui.graphics.Color(0xFF8FA3FF) else androidx.compose.ui.graphics.Color(0xFF2A47E8)
+    Column(modifier.clip(RoundedCornerShape(16.dp))
+        .background(if (on) cs.primaryContainer else androidx.compose.ui.graphics.Color.Transparent)
+        .border(1.5.dp, if (on) cs.primary else cs.outline, RoundedCornerShape(16.dp))
+        .clickable(role = Role.RadioButton, onClick = onClick).padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxWidth().height(54.dp).clip(RoundedCornerShape(10.dp)).background(bg).padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Box(Modifier.fillMaxWidth(0.55f).height(7.dp).clip(RoundedCornerShape(3.dp)).background(bar))
+            Box(Modifier.fillMaxWidth().height(7.dp).clip(RoundedCornerShape(3.dp)).background(bar.copy(alpha = 0.35f)))
+        }
+        Text(label, style = MaterialTheme.typography.titleMedium)
+    }
+}
+
+@Composable
+fun ListRow(title: String, sub: String, onClick: () -> Unit) {
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 6.dp)) {
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+fun AppHeader(dark: Boolean, onToggleTheme: () -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    Row(Modifier.fillMaxWidth().statusBarsPadding().height(64.dp).padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Box(Modifier.size(38.dp).clip(androidx.compose.foundation.shape.CircleShape).background(BtnBlue), contentAlignment = Alignment.Center) {
+                Text("@", color = androidx.compose.ui.graphics.Color.White, style = MaterialTheme.typography.titleMedium)
+            }
+            Column {
+                Text(androidx.compose.ui.res.stringResource(com.tjo7.stamp.R.string.app_title), style = MaterialTheme.typography.titleMedium)
+                Text(androidx.compose.ui.res.stringResource(com.tjo7.stamp.R.string.app_sub), style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+            }
+        }
+        Box(Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(cs.surface)
+            .border(1.dp, cs.outline, RoundedCornerShape(14.dp)).clickable(onClick = onToggleTheme), contentAlignment = Alignment.Center) {
+            Text(if (dark) "☀" else "☾", style = MaterialTheme.typography.titleMedium)
+        }
+    }
+}
+
+@Composable
+fun SaveBar(status: String, enabled: Boolean, busy: Boolean, onSave: () -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    Row(Modifier.fillMaxWidth().background(cs.background).border(1.dp, cs.outline).padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        Button(onClick = onSave, enabled = enabled && !busy, shape = RoundedCornerShape(18.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = BtnBlue, contentColor = androidx.compose.ui.graphics.Color.White),
+            modifier = Modifier.height(54.dp)) {
+            Text(androidx.compose.ui.res.stringResource(com.tjo7.stamp.R.string.save_btn), style = MaterialTheme.typography.titleMedium)
+        }
+        Text(status, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, modifier = Modifier.weight(1f))
+    }
 }

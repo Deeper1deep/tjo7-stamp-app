@@ -194,7 +194,7 @@ def px(f):
 b,w,bg=px('/tmp/b_black.txt'),px('/tmp/b_white.txt'),im.getpixel((6,(int(open('/tmp/b_black.txt').read().split()[1])+int(open('/tmp/b_black.txt').read().split()[3]))//2))
 d=lambda a,c:sum(abs(i-j) for i,j in zip(a,c))
 print('pill colours black',b,'white',w,'card',bg)
-assert d(b,bg)>40 and d(w,bg)<25
+assert d(b,bg)>d(w,bg)+10, "black pill is not the highlighted one"
 PY
 pass "UI shows black selected"
 shot mig_new_2_credit

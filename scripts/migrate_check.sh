@@ -91,7 +91,7 @@ for f,w,e in fields(open(sys.argv[1],'rb').read()):
                 if f3==1: val=bool(v3)
                 elif f3==2: val=round(struct.unpack('<f',v3)[0],4)
                 elif f3==3: val=v3
-                elif f3==4: val=v3.decode()
+                elif f3==5: val=v3.decode()
     out[key]=val
 print(json.dumps(out))
 PY

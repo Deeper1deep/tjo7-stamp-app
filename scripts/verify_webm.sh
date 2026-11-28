@@ -12,7 +12,7 @@ assert s['codec_name']=='vp8'; assert int(s['nb_read_frames'])>=2
 PY
 ffprobe -v error -select_streams v:0 -show_entries packet=pts_time -of csv=p=0 "$F" > /tmp/pts.txt
 python3 - <<'PY' || fail "timestamps not strictly increasing"
-v=[float(x) for x in open('/tmp/pts.txt').read().split() if x]
+v=[float(x.strip(',')) for x in open('/tmp/pts.txt').read().split() if x.strip(',')]
 assert len(v)>=2 and all(b>a for a,b in zip(v,v[1:])), v[:10]
 PY
 # libvpx decoder reads the alpha BlockAdditions -> yuva420p; the native decoder would silently drop it

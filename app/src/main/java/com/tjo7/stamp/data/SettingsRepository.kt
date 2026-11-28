@@ -27,7 +27,7 @@ class SettingsRepository(private val ctx: Context) {
         val size = stringPreferencesKey("size"); val audio = booleanPreferencesKey("audio")
         val crop = booleanPreferencesKey("stickerCrop"); val dark = booleanPreferencesKey("dark")
         val updSkip = intPreferencesKey("updSkip")
-        val legacyDone = booleanPreferencesKey("legacyDone")
+        val legacyDone = booleanPreferencesKey("legacyDone"); val legacyTries = intPreferencesKey("legacyTries")
     }
 
     val settings: Flow<StampSettings> = ctx.store.data.map { read(it) }
@@ -51,8 +51,14 @@ class SettingsRepository(private val ctx: Context) {
     suspend fun importLegacy(l: LegacyImport.Legacy?) {
         ctx.store.edit { p ->
             if (p[K.legacyDone] == true) return@edit
+            if (l == null) {
+                // The read failed or timed out: keep the old data reachable and retry on the next launches (max 3 tries).
+                val tries = (p[K.legacyTries] ?: 0) + 1
+                p[K.legacyTries] = tries
+                if (tries >= 3) p[K.legacyDone] = true
+                return@edit
+            }
             p[K.legacyDone] = true
-            if (l == null) return@edit
             if (p[K.text] == null && p[K.corner] == null && l.settings != null) {
                 val o = l.settings; val g = o.optJSONObject("g")
                 fun num(j: org.json.JSONObject?, k: String, lo: Int, hi: Int): Int? =
@@ -63,7 +69,10 @@ class SettingsRepository(private val ctx: Context) {
                 num(g, "opacity", 0, 100)?.let { p[K.opacity] = it }
                 num(g, "shadow", 0, 100)?.let { p[K.shadow] = it }
                 g?.optInt("weight", 0)?.let { if (it == 400 || it == 700) p[K.bold] = it == 700 }
-                g?.optString("color")?.let { if (it == "#ffffff" || it == "#000000") p[K.white] = it == "#ffffff" }
+                g?.optString("color")?.lowercase()?.let { c ->
+                    if (c == "#ffffff" || c == "#fff" || c == "white") p[K.white] = true
+                    else if (c == "#000000" || c == "#000" || c == "black") p[K.white] = false
+                }
                 CreditMode.from(g?.optString("mode"))?.let { p[K.mode] = it.key }
                 o.optString("text").takeIf { it.isNotBlank() }?.let { p[K.text] = it.take(StampSettings.MAX_TEXT) }
                 OutFormat.fromLegacy(o.optString("fmt"))?.let { p[K.format] = it.key }

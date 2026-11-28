@@ -17,6 +17,8 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
@@ -60,7 +62,7 @@ fun <T> Segmented(options: List<Pair<T, String>>, selected: T, compact: Boolean 
             Box(Modifier.weight(1f).clip(RoundedCornerShape(10.dp))
                 .background(if (on) MaterialTheme.colorScheme.surface else androidx.compose.ui.graphics.Color.Transparent)
                 .then(if (on) Modifier.border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp)) else Modifier)
-                .clickable(role = Role.RadioButton) { onSelect(v) }.padding(vertical = if (compact) 5.dp else 8.dp, horizontal = 4.dp),
+                .semantics { this.selected = on }.clickable(role = Role.RadioButton) { onSelect(v) }.padding(vertical = if (compact) 5.dp else 8.dp, horizontal = 4.dp),
                 contentAlignment = Alignment.Center) {
               Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (dot != null) Box(Modifier.size(11.dp).clip(androidx.compose.foundation.shape.CircleShape).background(dot(v)).border(1.dp, MaterialTheme.colorScheme.outline, androidx.compose.foundation.shape.CircleShape))

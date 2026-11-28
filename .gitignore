@@ -2,3 +2,6 @@
 signing/*.keystore
 signing/*.jks
 signing/*.properties
+
+# Local Gradle cache
+.gradle/

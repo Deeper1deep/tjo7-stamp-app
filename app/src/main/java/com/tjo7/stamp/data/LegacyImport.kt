@@ -14,12 +14,16 @@ import java.io.ByteArrayInputStream
 import kotlin.coroutines.resume
 
 /**
+ * DOCUMENTED EXCEPTION to "no WebView": this object creates ONE hidden, never-attached WebView, only to read the old
+ * Capacitor build's localStorage once (same package + same signing key keep that data across the update), and destroys it
+ * right after. No WebView is ever used for UI or normal functionality; after the migration succeeds it is never created again.
+ *
  * The previous (web/Capacitor) build kept its settings in the WebView's localStorage for the origin
  * https://localhost. Same package + same signature keep that data across the update, so a hidden WebView
  * on the same origin can read it once and hand it to [SettingsRepository.importLegacy].
  */
 object LegacyImport {
-    class Legacy(val settings: JSONObject?, val theme: String?)
+    class Legacy(val settings: JSONObject?, val theme: String?) { val isEmpty get() = settings == null && theme == null }
 
     suspend fun read(ctx: Context): Legacy? = withTimeoutOrNull(7000) {
         suspendCancellableCoroutine { cont ->
@@ -48,6 +52,6 @@ object LegacyImport {
         val arr = JSONArray(inner)
         val s = if (arr.isNull(0)) null else JSONObject(arr.getString(0))
         val t = if (arr.isNull(1)) null else arr.getString(1)
-        if (s == null && t == null) null else Legacy(s, t)
+        Legacy(s, t)   // both null = the old page loaded fine and had nothing stored (a confirmed "no old data")
     }.getOrNull()
 }

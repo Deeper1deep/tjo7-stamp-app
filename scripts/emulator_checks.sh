@@ -5,7 +5,7 @@ PKG=com.tjo7.stamp
 NEW=dist/tjo7-stamp.apk
 adb shell wm size 880x1920; adb shell wm density 343; sleep 2; echo "display: $(adb shell wm size | tr '\n' ' ') $(adb shell wm density | tr '\n' ' ')"
 echo "== migration check (build-26 settings -> new app)"
-bash scripts/migrate_check.sh "$NEW" || true
+bash scripts/migrate_check.sh "$NEW" || { echo "MIGRATION CHECK FAILED"; mkdir -p dist/shots; adb pull /data/local/tmp/shots/. dist/shots/ >/dev/null 2>&1 || true; exit 1; }
 mkdir -p dist/shots; adb pull /data/local/tmp/shots/. dist/shots/ >/dev/null 2>&1 || true
 adb uninstall $PKG >/dev/null 2>&1 || true
 echo "== instrumented tests"

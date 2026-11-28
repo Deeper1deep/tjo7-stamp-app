@@ -53,6 +53,12 @@ if cmd=='has':
         if any(arg in t[0] or arg in t[1] for t in nodes()): print('FOUND',arg); sys.exit(0)
         time.sleep(1)
     print('NOT FOUND',arg); sys.exit(1)
+if cmd=='bounds':
+    for _ in range(tries):
+        t=find(arg,prefix)
+        if t: print(*t[4]); sys.exit(0)
+        time.sleep(1)
+    sys.exit(1)
 if cmd=='selected':
     for _ in range(tries):
         ns=nodes(); t=next((n for n in ns if match(n,arg,prefix)),None)
@@ -175,7 +181,21 @@ python3 /tmp/ui.py has "GIF" x 5 >/dev/null || fail "the new app UI does not sho
 pass "UI shows the migrated format"
 python3 /tmp/ui.py tap "بعدين" x 3 >/dev/null 2>&1 || true; sleep 1
 python3 /tmp/ui.py tap "الحقوق" || fail "new app: credit tab"; sleep 2
-python3 /tmp/ui.py selected "أسود" || fail "new app does not show black as the selected colour"
+# The selected pill is only drawn (not exposed to accessibility), so check pixels: the chosen option's pill differs from the
+# surrounding card colour, the unchosen one equals it.
+adb shell screencap -p /sdcard/c.png && adb pull /sdcard/c.png /tmp/c.png >/dev/null
+python3 /tmp/ui.py bounds "أسود" > /tmp/b_black.txt || fail "cannot locate the black option"
+python3 /tmp/ui.py bounds "أبيض" > /tmp/b_white.txt || fail "cannot locate the white option"
+python3 - <<'PY' || fail "new app does not show black as the selected colour"
+from PIL import Image
+im=Image.open('/tmp/c.png').convert('RGB')
+def px(f):
+    x1,y1,x2,y2=map(int,open(f).read().split()); return im.getpixel((max(x1-14,0),(y1+y2)//2))
+b,w,bg=px('/tmp/b_black.txt'),px('/tmp/b_white.txt'),im.getpixel((6,(int(open('/tmp/b_black.txt').read().split()[1])+int(open('/tmp/b_black.txt').read().split()[3]))//2))
+d=lambda a,c:sum(abs(i-j) for i,j in zip(a,c))
+print('pill colours black',b,'white',w,'card',bg)
+assert d(b,bg)>40 and d(w,bg)<25
+PY
 pass "UI shows black selected"
 shot mig_new_2_credit
 python3 /tmp/ui.py tap "الإخراج" || fail "new app: output tab"; sleep 2

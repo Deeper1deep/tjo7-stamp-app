@@ -131,6 +131,8 @@ jobs:
           path: dist
           key: dist-${{ github.run_id }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
+      - name: Tools for the checks (PIL, ffmpeg)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg python3-pil xxd
       - name: Instrumented tests + install-over-the-old-app test on an emulator
         timeout-minutes: 35
         uses: reactivecircus/android-emulator-runner@v2

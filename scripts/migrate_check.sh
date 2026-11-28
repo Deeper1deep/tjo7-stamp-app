@@ -55,8 +55,12 @@ if cmd=='has':
     print('NOT FOUND',arg); sys.exit(1)
 if cmd=='selected':
     for _ in range(tries):
-        t=find(arg,prefix)
-        if t: print('SELECTED' if t[3] else 'NOT-SELECTED'); sys.exit(0 if t[3] else 2)
+        ns=nodes(); t=next((n for n in ns if match(n,arg,prefix)),None)
+        if t:
+            cx=(t[4][0]+t[4][2])//2; cy=(t[4][1]+t[4][3])//2
+            # selected state may sit on the text node or on the clickable container around it
+            sel=any(n[3] and n[4][0]<=cx<=n[4][2] and n[4][1]<=cy<=n[4][3] and (n[4][2]-n[4][0])<700 for n in ns)
+            print('SELECTED' if sel else 'NOT-SELECTED', [(n[0],n[1],n[3],n[4]) for n in ns if n[3]][:6]); sys.exit(0 if sel else 2)
         time.sleep(1)
     print('NOT FOUND',arg); sys.exit(1)
 PY

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Strict check of an exported transparent WebM: structure, codec, timestamps, and REAL alpha decoding (libvpx).
 set -uo pipefail
-F=${1:?file}; fail(){ echo "WEBM: FAIL - $1"; exit 1; }
+F=${1:?file}; MAXA=${2:-200}; fail(){ echo "WEBM: FAIL - $1"; exit 1; }
 [ -s "$F" ] || fail "$F missing or empty"
 head -c 4 "$F" | xxd -p | grep -qi '^1a45dfa3' || fail "not an EBML/Matroska file"
 ffprobe -v error -show_entries stream=codec_name,width,height,avg_frame_rate,nb_read_frames -count_frames -of json "$F" > /tmp/probe.json || fail "ffprobe cannot parse the file"
@@ -17,15 +17,15 @@ assert len(v)>=2 and all(b>a for a,b in zip(v,v[1:])), v[:10]
 PY
 # libvpx decoder reads the alpha BlockAdditions -> yuva420p; the native decoder would silently drop it
 rm -f /tmp/a_*.png; ffmpeg -v error -y -c:v libvpx -i "$F" -pix_fmt rgba -vf scale=iw/4:ih/4 /tmp/a_%03d.png || fail "libvpx decode failed"
-python3 - <<'PY' || fail "decoded frames have NO real transparency (alpha missing or constant)"
+MAXA=$MAXA python3 - <<'PY' || fail "decoded frames have NO real transparency (alpha missing or constant)"
 import glob
 from PIL import Image
-fr=sorted(glob.glob('/tmp/a_*.png')); mn=255; mx=0; partial=0; opaque_px=0
+import os; MAXA=int(os.environ['MAXA']); fr=sorted(glob.glob('/tmp/a_*.png')); mn=255; mx=0; partial=0; opaque_px=0
 for p in fr:
     im=Image.open(p).convert('RGBA'); a=im.getchannel('A'); lo,hi=a.getextrema(); mn=min(mn,lo); mx=max(mx,hi)
     h=a.histogram(); opaque_px+=sum(h[200:]); partial+=sum(h[1:200])
 print('frames',len(fr),'alpha min',mn,'max',mx,'opaque px',opaque_px,'partial px',partial)
 # VP8 alpha is coded as a luma plane, so full opacity decodes near 235 (limited range) rather than 255
-assert len(fr)>=2 and mn<40 and mx>200 and opaque_px>0
+assert len(fr)>=2 and mn<40 and mx>MAXA and (partial+opaque_px)>0
 PY
 echo "WEBM: ALPHA VERIFIED (VP8 + real alpha decoded by libvpx)"

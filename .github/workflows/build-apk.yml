@@ -148,7 +148,7 @@ jobs:
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg python3-pil xxd
           ls -l dist/shots/*.webm || true
-          bash scripts/verify_webm.sh dist/shots/alpha_export.webm
+          bash scripts/verify_webm.sh dist/shots/alpha_export.webm 100   # export uses the default 55% credit opacity
           bash scripts/verify_webm.sh dist/shots/alpha_sample.webm
       - name: Upload UI screenshots
         if: always()

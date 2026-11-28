@@ -122,12 +122,12 @@ python3 /tmp/ui.py has "الحقوق" x 15 >/dev/null || fail "old app did not s
 shot mig_old_1_editor
 python3 /tmp/ui.py tap "بعدين" x 3 >/dev/null 2>&1 || true; sleep 1
 # --- change settings with taps only (no keyboard)
-python3 /tmp/ui.py tap "الحقوق" || fail "old app: credit tab"; sleep 2
+python3 /tmp/ui.py tap "الحقوق" x 40 || fail "old app: credit tab"; sleep 2
 python3 /tmp/ui.py tap "أسود" || fail "old app: black colour"; sleep 1
 python3 /tmp/ui.py tap "عريض" >/dev/null 2>&1 && echo "old app: bold tapped" ; sleep 1
 python3 /tmp/ui.py tap "وميض" >/dev/null 2>&1 && echo "old app: blink tapped" ; sleep 1
 shot mig_old_2_credit
-python3 /tmp/ui.py tap "الإخراج" || fail "old app: output tab"; sleep 2
+python3 /tmp/ui.py tap "الإخراج" x 40 || fail "old app: output tab"; sleep 2
 python3 /tmp/ui.py tap "GIF" prefix || fail "old app: GIF format"; sleep 1
 python3 /tmp/ui.py tap "720" prefix >/dev/null 2>&1 && echo "old app: 720 tapped"; sleep 1
 python3 /tmp/ui.py tap "بدون صوت" >/dev/null 2>&1 && echo "old app: audio off tapped"; sleep 2
